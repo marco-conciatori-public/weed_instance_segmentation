@@ -56,9 +56,9 @@ def run_inference(image_path: str, model, processor, device: str):
 
 
 def visualize_result(image, result: dict, model, confidence_threshold: float = 0.5) -> None:
-    '''
+    """
     Visualizes the instance segmentation masks overlaid on the image.
-    '''
+    """
     segmentation = result['segmentation'].cpu().numpy()
     segments_info = result['segments_info']
 
@@ -71,8 +71,10 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
     color_mask = np.zeros((segmentation.shape[0], segmentation.shape[1], 4))
 
     legend_patches = []
-    seen_labels = set()
     contours_to_draw = []
+
+    # Track counts for each class label to assign indices
+    class_counts = {}
 
     print(f'Found {len(segments_info)} instances.')
 
@@ -86,6 +88,13 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
             continue
 
         label_text = model.config.id2label[label_id]
+
+        # Update count for this class
+        count = class_counts.get(label_text, 0) + 1
+        class_counts[label_text] = count
+
+        # Create display label with index
+        display_label = f"{label_text} {count}"
 
         # Generate a random vivid color (RGB)
         rgb = np.random.random(3)
@@ -104,11 +113,9 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
         contour_color = np.concatenate([rgb, [contour_alpha]])
         contours_to_draw.append((mask_bool, contour_color))
 
-        # Add to legend if we haven't seen this class yet
-        if label_id not in seen_labels:
-            patch = mpatches.Patch(color=fill_color, label=f'{label_text}')
-            legend_patches.append(patch)
-            seen_labels.add(label_id)
+        # Add to legend for every instance
+        patch = mpatches.Patch(color=fill_color, label=display_label)
+        legend_patches.append(patch)
 
     # Show the transparent fills
     ax.imshow(color_mask)
@@ -121,7 +128,8 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
     ax.axis('off')
 
     # Add a legend to the plot
-    plt.legend(handles=legend_patches, loc='upper right', bbox_to_anchor=(1.15, 1))
+    # Adjusted bbox_to_anchor to account for potentially longer legend list
+    plt.legend(handles=legend_patches, loc='upper right', bbox_to_anchor=(1.25, 1))
     plt.title(f'Mask2Former (Swin-L) Instance Segmentation', fontsize=16)
     plt.tight_layout()
     plt.show()
