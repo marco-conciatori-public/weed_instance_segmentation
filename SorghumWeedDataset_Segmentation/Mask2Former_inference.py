@@ -72,6 +72,7 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
 
     legend_patches = []
     seen_labels = set()
+    contours_to_draw = []
 
     print(f'Found {len(segments_info)} instances.')
 
@@ -86,21 +87,37 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
 
         label_text = model.config.id2label[label_id]
 
-        # Generate a random vivid color for this instance
-        color = np.concatenate([np.random.random(3), [0.6]])  # 0.6 is alpha (transparency)
+        # Generate a random vivid color (RGB)
+        rgb = np.random.random(3)
 
-        # Apply color to the mask location
+        # 1. High Transparency Cover (Low Alpha)
+        fill_alpha = 0.3
+        fill_color = np.concatenate([rgb, [fill_alpha]])
+
+        # Apply fill color to the mask location
         mask_bool = (segmentation == segment_id)
-        color_mask[mask_bool] = color
+        color_mask[mask_bool] = fill_color
 
-        # Add to legend if we haven't seen this class yet (or for every instance)
-        # Here we add a legend entry for every unique class found
+        # Store contour data to draw later (to ensure they sit on top)
+        # 2. Low Transparency Contour (High Alpha)
+        contour_alpha = 0.9
+        contour_color = np.concatenate([rgb, [contour_alpha]])
+        contours_to_draw.append((mask_bool, contour_color))
+
+        # Add to legend if we haven't seen this class yet
         if label_id not in seen_labels:
-            patch = mpatches.Patch(color=color, label=f'{label_text}')
+            patch = mpatches.Patch(color=fill_color, label=f'{label_text}')
             legend_patches.append(patch)
             seen_labels.add(label_id)
 
+    # Show the transparent fills
     ax.imshow(color_mask)
+
+    # Draw contours on top of the fills
+    for mask, color in contours_to_draw:
+        # levels=[0.5] draws the boundary for the boolean mask
+        ax.contour(mask, levels=[0.5], colors=[color], linewidths=2)
+
     ax.axis('off')
 
     # Add a legend to the plot
