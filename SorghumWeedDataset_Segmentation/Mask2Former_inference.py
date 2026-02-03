@@ -1,5 +1,4 @@
 import torch
-import requests
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -34,10 +33,7 @@ def run_inference(image_path: str, model, processor, device: str):
     Runs inference on a single image.
     '''
     # Load Image
-    if image_path.startswith('http'):
-        image = Image.open(requests.get(image_path, stream=True).raw)
-    else:
-        image = Image.open(image_path)
+    image = Image.open(image_path)
 
     print(f'Processing image size: {image.size}')
 
@@ -118,9 +114,6 @@ if __name__ == '__main__':
     # 1. Load Model
     model, processor, device = load_model()
 
-    # 2. Define Image (URL or local path)
-    # Using a standard COCO validation image (Street scene)
-    # IMAGE_URL = 'http://images.cocodataset.org/val2017/000000039769.jpg'
     IMAGE_URL = '../data/20230607_095156.jpg'
 
     # 3. Run Pipeline
