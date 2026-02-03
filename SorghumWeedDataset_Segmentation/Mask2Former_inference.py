@@ -76,16 +76,27 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
     # Track counts for each class label to assign indices
     class_counts = {}
 
-    print(f'Found {len(segments_info)} instances.')
+    # Filter segments first to determine the exact number of colors needed
+    valid_segments = [s for s in segments_info if s['score'] >= confidence_threshold]
+    num_instances = len(valid_segments)
 
-    for segment in segments_info:
+    print(f'Found {len(segments_info)} raw instances, {num_instances} passed threshold.')
+
+    # Generate distinct colors based on the number of instances
+    # 'tab20' is a qualitative colormap with 20 distinct colors.
+    # 'nipy_spectral' is a high-contrast continuous map good for many classes.
+    if num_instances <= 20:
+        cmap = plt.get_cmap('tab20')
+        colors = [cmap(i) for i in range(num_instances)]
+    else:
+        cmap = plt.get_cmap('nipy_spectral')
+        colors = [cmap(i) for i in np.linspace(0, 1, num_instances)]
+
+    # Loop through filtered segments
+    for i, segment in enumerate(valid_segments):
         segment_id = segment['id']
         label_id = segment['label_id']
-        score = segment['score']
-
-        # Filter low confidence predictions if desired
-        if score < confidence_threshold:
-            continue
+        # score check already done during filtering
 
         label_text = model.config.id2label[label_id]
 
@@ -96,8 +107,8 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
         # Create display label with index
         display_label = f"{label_text} {count}"
 
-        # Generate a random vivid color (RGB)
-        rgb = np.random.random(3)
+        # Get the assigned distinct color (slice :3 to get RGB, ignore alpha from cmap)
+        rgb = colors[i][:3]
 
         # 1. High Transparency Cover (Low Alpha)
         fill_alpha = 0.3
