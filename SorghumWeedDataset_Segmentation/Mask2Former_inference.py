@@ -111,13 +111,12 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
 
 
 if __name__ == '__main__':
-    # 1. Load Model
+    # Load Model
     model, processor, device = load_model()
 
-    IMAGE_URL = '../data/20230607_095156.jpg'
+    # Run Pipeline
+    IMAGE_PATH = '../data/20230607_095156.jpg'
+    image, result = run_inference(image_path=IMAGE_PATH, model=model, processor=processor, device=device)
 
-    # 3. Run Pipeline
-    image, result = run_inference(IMAGE_URL, model, processor, device)
-
-    # 4. Show Output
-    visualize_result(image, result, model)
+    # Show Output
+    visualize_result(image=image, result=result, model=model)
