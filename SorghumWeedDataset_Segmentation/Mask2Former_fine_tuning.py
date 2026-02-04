@@ -118,14 +118,12 @@ class WeedDataset(Dataset):
             class_name = region_attr.get('classname', None)
             if class_name not in LABEL2ID:
                 continue  # Skip unknown classes
-
             class_id = LABEL2ID[class_name]
 
             # Draw polygon on the instance map
             # NOTE: We must scale the polygon points if we resized the image
             all_x = [int(x * scale_factor) for x in shape_attr['all_points_x']]
             all_y = [int(y * scale_factor) for y in shape_attr['all_points_y']]
-
             points = np.array(list(zip(all_x, all_y)), dtype=np.int32)
 
             # Fill the polygon with the current_instance_id
@@ -212,7 +210,6 @@ def train(output_dir, metadata):
     # 2. Datasets & Loaders
     train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
     val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
-
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
@@ -293,7 +290,6 @@ def train(output_dir, metadata):
 
     train_end_time = datetime.now()
     train_duration = (train_end_time - train_start_time).total_seconds()
-
     metadata['training']['end_time'] = train_end_time.isoformat()
     metadata['training']['duration_seconds'] = train_duration
     metadata['training']['best_validation_loss'] = best_val_loss if best_val_loss != float('inf') else None
