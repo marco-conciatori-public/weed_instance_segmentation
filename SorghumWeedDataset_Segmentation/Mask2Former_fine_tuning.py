@@ -13,8 +13,8 @@ DATASET_ROOT = 'F:/LAVORO/Miningful/weed_segmentation_dataset/SorghumWeedDataset
 TRAIN_IMG_DIR = os.path.join(DATASET_ROOT, 'Train/')
 TRAIN_JSON = os.path.join(DATASET_ROOT, 'Annotations/TrainSorghumWeed_json.json')
 VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validation/')
-VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidationSorghumWeed_json.json')
-OUTPUT_DIR = 'SorghumWeedDataset_Segmentation/models/mask2former_finetuned'
+VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
+OUTPUT_DIR = 'models/mask2former_finetuned'
 
 # Model Config
 MODEL_CHECKPOINT = 'facebook/mask2former-swin-large-coco-instance'
