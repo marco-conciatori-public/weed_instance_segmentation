@@ -22,7 +22,7 @@ warnings.filterwarnings(
 DATASET_ROOT = 'F:/LAVORO/Miningful/weed_segmentation_dataset/SorghumWeedDataset_Segmentation/'
 TRAIN_IMG_DIR = os.path.join(DATASET_ROOT, 'Train/')
 TRAIN_JSON = os.path.join(DATASET_ROOT, 'Annotations/TrainSorghumWeed_json.json')
-VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validation/')
+VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validate/')
 VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
 TEST_IMG_DIR = os.path.join(DATASET_ROOT, 'Test/')
 TEST_JSON = os.path.join(DATASET_ROOT, 'Annotations/TestSorghumWeed_json.json')
