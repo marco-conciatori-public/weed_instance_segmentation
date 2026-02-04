@@ -151,8 +151,15 @@ if __name__ == '__main__':
     model, processor, device = load_model()
 
     # Run Pipeline
-    IMAGE_PATH = '../data/20230607_095156.jpg'
-    image, result = run_inference(image_path=IMAGE_PATH, model=model, processor=processor, device=device)
+    DATA_FOLDER_PATH = '../data/'
+    # IMAGE_NAME = '20230607_095156.jpg'
+    IMAGE_NAME = 'IMG_20230505_164625.jpg'
+    image, result = run_inference(
+        image_path=DATA_FOLDER_PATH + IMAGE_NAME,
+        model=model,
+        processor=processor,
+        device=device,
+    )
 
     # Show Output
     visualize_result(image=image, result=result, model=model)
