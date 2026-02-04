@@ -154,7 +154,9 @@ if __name__ == '__main__':
     # Run Pipeline
     DATA_FOLDER_PATH = '../data/'
     # IMAGE_NAME = '20230607_095156.jpg'
-    IMAGE_NAME = 'IMG_20230505_164625.jpg'
+    # IMAGE_NAME = 'IMG_20230505_164625.jpg'
+    IMAGE_NAME = 'TestSorghumWeed (7).JPG'
+    # IMAGE_NAME = 'TestSorghumWeed (14).JPG'
     image, result = run_inference(
         image_path=DATA_FOLDER_PATH + IMAGE_NAME,
         model=model,
