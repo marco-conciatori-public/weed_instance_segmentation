@@ -155,7 +155,33 @@ def collate_fn(batch):
     }
 
 
-def training():
+def evaluate(model, data_loader, device, desc="Evaluating"):
+    """Evaluates the model on a given dataset and returns the average loss."""
+    model.eval()
+    total_loss = 0
+    with torch.no_grad():
+        for batch in tqdm(data_loader, desc=desc):
+            # Move batch to device
+            pixel_values = batch["pixel_values"].to(device)
+            mask_labels = [labels.to(device) for labels in batch["mask_labels"]]
+            class_labels = [labels.to(device) for labels in batch["class_labels"]]
+
+            # Forward Pass
+            outputs = model(
+                pixel_values=pixel_values,
+                mask_labels=mask_labels,
+                class_labels=class_labels
+            )
+
+            loss = outputs.loss
+            total_loss += loss.item()
+
+    avg_loss = total_loss / len(data_loader)
+    model.train()  # Set model back to training mode
+    return avg_loss
+
+
+def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on: {device}")
 
@@ -166,17 +192,11 @@ def training():
     processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
 
     # 2. Datasets & Loaders
-    # TODO: change back to using training dataset, using test for checks because in is smaller
-    train_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
-    # Using Train set for validation just to check code logic, ideally use Val set
+    train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
     val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
-    # Verify validation loader works
-    if len(val_dataset) > 0:
-        val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
-    else:
-        val_loader = None
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     # 3. Initialize Model
     # ignore_mismatched_sizes=True because it is replacing the 80-class COCO head
@@ -194,6 +214,7 @@ def training():
 
     # 5. Training Loop
     model.train()
+    best_val_loss = float('inf')
 
     print("Starting Training...")
 
@@ -229,15 +250,20 @@ def training():
             total_loss += current_loss
             progress_bar.set_postfix({"loss": f"{current_loss:.4f}"})
 
-        avg_loss = total_loss / len(train_loader)
-        print(f"Epoch {epoch + 1} Complete. Average Loss: {avg_loss:.4f}")
+        avg_train_loss = total_loss / len(train_loader)
+        print(f"Epoch {epoch + 1} Complete. Average Training Loss: {avg_train_loss:.4f}")
 
-        if (epoch + 1) % 5 == 0:
-            # Save Checkpoint
-            save_path = os.path.join(OUTPUT_DIR, f"checkpoint-epoch-{epoch + 1}")
-            model.save_pretrained(save_path)
-            processor.save_pretrained(save_path)
-            print(f"Saved checkpoint to {save_path}")
+        # --- Validation Step ---
+        if val_loader:
+            avg_val_loss = evaluate(model, val_loader, device, desc="Validating")
+            print(f"Epoch {epoch + 1} - Validation Loss: {avg_val_loss:.4f}")
+
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                save_path = os.path.join(OUTPUT_DIR, "best_model")
+                model.save_pretrained(save_path)
+                processor.save_pretrained(save_path)
+                print(f"Saved new best model to {save_path} with validation loss: {best_val_loss:.4f}")
 
     print("Training Complete")
 
@@ -248,5 +274,50 @@ def training():
     print(f"Final model saved to {final_path}")
 
 
+def main():
+    # Run training
+    train()
+
+    # --- Testing Step ---
+    print("\n--- Starting Final Testing ---")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Paths to the models saved during training
+    final_model_path = os.path.join(OUTPUT_DIR, "final_model")
+    best_model_path = os.path.join(OUTPUT_DIR, "best_model")
+
+    # We need a processor to create the test dataset.
+    # It's best to load the one saved with the model to ensure consistency.
+    if not os.path.exists(final_model_path):
+        print("Final model not found. Skipping testing.")
+        return
+
+    # Use the processor associated with the trained model
+    processor = AutoImageProcessor.from_pretrained(final_model_path)
+
+    # Create test dataset and loader
+    test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+    if len(test_dataset) == 0:
+        print("No test data found. Skipping testing.")
+        return
+
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+
+    # Test the 'final_model'
+    print(f"\nTesting final model from: {final_model_path}")
+    final_model = Mask2FormerForUniversalSegmentation.from_pretrained(final_model_path).to(device)
+    final_test_loss = evaluate(final_model, test_loader, device, desc="Testing Final Model")
+    print(f"Final Model - Test Loss: {final_test_loss:.4f}")
+
+    # Test the 'best_model' if it exists
+    if os.path.exists(best_model_path):
+        print(f"\nTesting best model from: {best_model_path}")
+        best_model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
+        best_test_loss = evaluate(best_model, test_loader, device, desc="Testing Best Model")
+        print(f"Best Model - Test Loss: {best_test_loss:.4f}")
+
+    print("\n--- Testing Complete ---")
+
+
 if __name__ == "__main__":
-    training()
+    main()
