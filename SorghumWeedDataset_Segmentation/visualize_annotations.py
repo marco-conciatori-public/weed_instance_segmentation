@@ -88,14 +88,26 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
 
                     # Create the polygon patch
                     # alpha controls transparency (0.3 is 30% opaque)
-                    poly = Polygon(poly_points, closed=True,
-                                   linewidth=2, edgecolor=color, facecolor=color, alpha=0.3)
+                    poly = Polygon(
+                        poly_points,
+                        closed=True,
+                        linewidth=2,
+                        edgecolor=color,
+                        facecolor=color,
+                        alpha=0.3,
+                    )
 
                     ax.add_patch(poly)
 
                     # Add border only for clearer visibility
-                    border = Polygon(poly_points, closed=True,
-                                     linewidth=2, edgecolor=color, facecolor='none', alpha=0.9)
+                    border = Polygon(
+                        poly_points,
+                        closed=True,
+                        linewidth=2,
+                        edgecolor=color,
+                        facecolor='none',
+                        alpha=0.9,
+                    )
                     ax.add_patch(border)
 
                     # Store for legend

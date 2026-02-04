@@ -46,7 +46,7 @@ def run_inference(image_path: str, model, processor, device: str):
         outputs = model(**inputs)
 
     # Post-process results
-    # We must provide target_sizes (height, width) to resize masks back to original image
+    # resize masks back to original image (target_sizes height and width)
     result = processor.post_process_instance_segmentation(
         outputs=outputs,
         target_sizes=[image.size[::-1]]  # (Height, Width)
@@ -67,7 +67,7 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
     ax.imshow(image)
 
     # Create an empty colored mask
-    # We use RGBA for transparency
+    # RGBA for transparency
     color_mask = np.zeros((segmentation.shape[0], segmentation.shape[1], 4))
 
     legend_patches = []
