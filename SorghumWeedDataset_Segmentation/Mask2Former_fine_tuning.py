@@ -9,6 +9,7 @@ from PIL import Image
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
+from torchmetrics.detection import MeanAveragePrecision
 
 # Suppress specific warning about unused arguments in preprocessor config
 # This occurs because the checkpoint config has keys not used by the current processor version
@@ -93,6 +94,8 @@ class WeedDataset(Dataset):
             width, height = new_width, new_height  # Update dims for mask creation
             # print(f"Resized image to: {width}x{height}")
 
+        target_size = (height, width)  # This is what we need for post-processing
+
         # 2. Process Annotations (VIA Polygons -> Instance Maps)
         # Mask2Former Processor expects:
         # - segmentation_maps: (H, W) array where pixels = instance_id (1, 2, 3...)
@@ -146,7 +149,8 @@ class WeedDataset(Dataset):
         return {
             "pixel_values": inputs["pixel_values"][0],
             "mask_labels": inputs["mask_labels"][0],
-            "class_labels": inputs["class_labels"][0]
+            "class_labels": inputs["class_labels"][0],
+            "target_size": target_size
         }
 
 
@@ -157,11 +161,13 @@ def collate_fn(batch):
     # mask_labels and class_labels are lists because number of instances varies per image
     mask_labels = [item["mask_labels"] for item in batch]
     class_labels = [item["class_labels"] for item in batch]
+    target_sizes = [item["target_size"] for item in batch]
 
     return {
         "pixel_values": pixel_values,
         "mask_labels": mask_labels,
-        "class_labels": class_labels
+        "class_labels": class_labels,
+        "target_sizes": target_sizes
     }
 
 
@@ -191,12 +197,14 @@ def evaluate(model, data_loader, device, desc="Evaluating"):
     return avg_loss
 
 
-def train(output_dir):
+def train(output_dir, metadata):
+    train_start_time = datetime.now()
+    metadata['training'] = {
+        'start_time': train_start_time.isoformat()
+    }
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on: {device}")
-
-    # Create output directory
-    os.makedirs(output_dir, exist_ok=True)
 
     # 1. Initialize Processor
     processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
@@ -283,18 +291,128 @@ def train(output_dir):
     processor.save_pretrained(final_path)
     print(f"Final model saved to {final_path}")
 
+    train_end_time = datetime.now()
+    train_duration = (train_end_time - train_start_time).total_seconds()
+
+    metadata['training']['end_time'] = train_end_time.isoformat()
+    metadata['training']['duration_seconds'] = train_duration
+    metadata['training']['best_validation_loss'] = best_val_loss if best_val_loss != float('inf') else None
+
+    return metadata
+
+
+def test_with_metrics(model, processor, data_loader, device):
+    """
+    Evaluates the model on the test set using detailed metrics (mAP).
+    Note: This requires the `torchmetrics` library to be installed (`pip install torchmetrics`).
+    """
+    model.eval()
+    # The metric expects a list of predictions and a list of targets.
+    # Each prediction is a dict with 'masks', 'scores', 'labels'.
+    # Each target is a dict with 'masks', 'labels'.
+    map_metric = MeanAveragePrecision(iou_type="segm")
+
+    for batch in tqdm(data_loader, desc="Calculating Metrics"):
+        pixel_values = batch["pixel_values"].to(device)
+        target_sizes = batch["target_sizes"]  # List of (height, width) tuples
+
+        # Prepare ground truth targets for the metric
+        targets = []
+        for i in range(len(pixel_values)):
+            targets.append({
+                "masks": batch["mask_labels"][i],
+                "labels": batch["class_labels"][i],
+            })
+
+        # Perform inference
+        with torch.no_grad():
+            outputs = model(pixel_values=pixel_values)
+
+        # Post-process outputs to get instance segmentation predictions
+        # This returns a list of dicts, one for each image in the batch
+        predictions = processor.post_process_instance_segmentation(
+            outputs,
+            target_sizes=target_sizes,
+            threshold=0.5,  # Confidence threshold for predictions
+            mask_threshold=0.5  # Threshold to binarize masks
+        )
+
+        # The metric expects predictions and targets to be on the same device.
+        # The processor puts predictions on the model's device. Targets are on CPU.
+        # We'll move predictions to CPU.
+        cpu_predictions = []
+        for pred in predictions:
+            cpu_predictions.append({k: v.cpu() for k, v in pred.items()})
+
+        map_metric.update(cpu_predictions, targets)
+
+    # Compute and return the final metrics
+    results = map_metric.compute()
+    model.train()  # Set model back to training mode
+    return results
+
+
+def print_metrics(metrics, model_name="Model"):
+    """Helper function to print metrics from torchmetrics."""
+    print(f"\n--- {model_name} Metrics ---")
+    if not metrics:
+        print("No metrics calculated.")
+        return
+
+    # Main mAP metrics
+    print(f"  mAP:              {metrics.get('map', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (IoU=0.50):   {metrics.get('map_50', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (IoU=0.75):   {metrics.get('map_75', torch.tensor(-1)).item():.4f}")
+    print("-" * 25)
+    # mAP for different area sizes
+    print(f"  mAP (small):      {metrics.get('map_small', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (medium):     {metrics.get('map_medium', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (large):      {metrics.get('map_large', torch.tensor(-1)).item():.4f}")
+
+def prepare_metrics_for_json(metrics):
+    """Converts tensors in metrics dict to floats for JSON serialization."""
+    if not metrics:
+        return None
+    return {k: v.item() if isinstance(v, torch.Tensor) else v for k, v in metrics.items()}
+
 
 def main():
     # Create a unique output directory for this run based on the current time
-    run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_start_time = datetime.now()
+    run_timestamp = run_start_time.strftime("%Y-%m-%d_%H-%M-%S")
     run_output_dir = os.path.join(OUTPUT_DIR, run_timestamp)
     print(f"Results for this run will be saved in: {run_output_dir}")
+    os.makedirs(run_output_dir, exist_ok=True)
+
+    metadata = {
+        'run_id': run_timestamp,
+        'run_start_time': run_start_time.isoformat(),
+        'model_config': {
+            'base_checkpoint': MODEL_CHECKPOINT,
+            'learning_rate': LEARNING_RATE,
+            'batch_size': BATCH_SIZE,
+            'epochs': EPOCHS,
+            'gradient_accumulation': GRADIENT_ACCUMULATION,
+            'max_input_dim': MAX_INPUT_DIM,
+        },
+        'dataset_config': {
+            'train_annotations': TRAIN_JSON,
+            'validation_annotations': VAL_JSON,
+            'test_annotations': TEST_JSON,
+            'max_images_per_split': MAX_IMAGES,
+        },
+        'training': {},
+        'testing': {}
+    }
 
     # Run training
-    train(run_output_dir)
+    metadata = train(run_output_dir, metadata)
 
     # --- Testing Step ---
     print("\n--- Starting Final Testing ---")
+    test_start_time = datetime.now()
+    metadata['testing']['start_time'] = test_start_time.isoformat()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Paths to the models saved during training
@@ -321,17 +439,40 @@ def main():
     # Test the 'final_model'
     print(f"\nTesting final model from: {final_model_path}")
     final_model = Mask2FormerForUniversalSegmentation.from_pretrained(final_model_path).to(device)
-    final_test_loss = evaluate(final_model, test_loader, device, desc="Testing Final Model")
-    print(f"Final Model - Test Loss: {final_test_loss:.4f}")
+    final_model_metrics = test_with_metrics(final_model, processor, test_loader, device)
+    metadata['testing']['final_model_metrics'] = prepare_metrics_for_json(final_model_metrics)
+    print_metrics(final_model_metrics, "Final Model")
 
     # Test the 'best_model' if it exists
     if os.path.exists(best_model_path):
         print(f"\nTesting best model from: {best_model_path}")
         best_model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
-        best_test_loss = evaluate(best_model, test_loader, device, desc="Testing Best Model")
-        print(f"Best Model - Test Loss: {best_test_loss:.4f}")
+        best_model_metrics = test_with_metrics(best_model, processor, test_loader, device)
+        metadata['testing']['best_model_metrics'] = prepare_metrics_for_json(best_model_metrics)
+        print_metrics(best_model_metrics, "Best Model")
+    else:
+        metadata['testing']['best_model_metrics'] = None
 
     print("\n--- Testing Complete ---")
+
+    test_end_time = datetime.now()
+    test_duration = (test_end_time - test_start_time).total_seconds()
+    metadata['testing']['end_time'] = test_end_time.isoformat()
+    metadata['testing']['duration_seconds'] = test_duration
+
+    run_end_time = datetime.now()
+    run_duration = (run_end_time - run_start_time).total_seconds()
+    metadata['run_end_time'] = run_end_time.isoformat()
+    metadata['total_duration_seconds'] = run_duration
+
+    # Save metadata
+    metadata_path = os.path.join(run_output_dir, 'run_metadata.json')
+    try:
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+        print(f"\nRun metadata saved to {metadata_path}")
+    except Exception as e:
+        print(f"\nError saving metadata to {metadata_path}: {e}")
 
 
 if __name__ == "__main__":
