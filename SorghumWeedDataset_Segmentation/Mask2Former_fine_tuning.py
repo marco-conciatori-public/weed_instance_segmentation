@@ -315,8 +315,9 @@ def test_with_metrics(model, processor, data_loader, device):
         # Prepare ground truth targets for the metric
         targets = []
         for i in range(len(pixel_values)):
+            # The metric expects boolean masks, but the processor provides float masks.
             targets.append({
-                "masks": batch["mask_labels"][i],
+                "masks": batch["mask_labels"][i].to(torch.bool),
                 "labels": batch["class_labels"][i],
             })
 
