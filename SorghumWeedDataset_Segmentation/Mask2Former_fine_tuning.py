@@ -369,6 +369,7 @@ def print_metrics(metrics, model_name="Model"):
     print(f"  mAP (medium):     {metrics.get('map_medium', torch.tensor(-1)).item():.4f}")
     print(f"  mAP (large):      {metrics.get('map_large', torch.tensor(-1)).item():.4f}")
 
+
 def prepare_metrics_for_json(metrics):
     """Converts tensors in metrics dict to floats for JSON serialization."""
     if not metrics:
