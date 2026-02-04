@@ -11,14 +11,15 @@ def load_model():
     Loads the Mask2Former model and processor
     with the Swin-Large backbone for maximum accuracy
     """
-    print('Loading Mask2Former (Swin-Large-COCO)... this may take a moment.')
 
     # 'facebook/mask2former-swin-large-coco-instance' is the high-accuracy
     # checkpoint fine-tuned for instance segmentation.
-    model_id = 'facebook/mask2former-swin-large-coco-instance'
+    # model_id_or_path = 'facebook/mask2former-swin-large-coco-instance'
+    model_id_or_path = 'models/mask2former_finetuned/final_model'
+    print(f'Loading {model_id_or_path}...')
 
-    processor = AutoImageProcessor.from_pretrained(model_id, use_fast=False)
-    model = Mask2FormerForUniversalSegmentation.from_pretrained(model_id)
+    processor = AutoImageProcessor.from_pretrained(model_id_or_path, use_fast=False)
+    model = Mask2FormerForUniversalSegmentation.from_pretrained(model_id_or_path)
 
     # Use GPU if available
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
