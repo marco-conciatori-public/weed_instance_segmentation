@@ -7,10 +7,10 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 
 def load_model():
-    '''
+    """
     Loads the Mask2Former model and processor
     with the Swin-Large backbone for maximum accuracy
-    '''
+    """
     print('Loading Mask2Former (Swin-Large-COCO)... this may take a moment.')
 
     # 'facebook/mask2former-swin-large-coco-instance' is the high-accuracy
@@ -29,9 +29,9 @@ def load_model():
 
 
 def run_inference(image_path: str, model, processor, device: str):
-    '''
+    """
     Runs inference on a single image.
-    '''
+    """
     # Load Image
     image = Image.open(image_path)
 
