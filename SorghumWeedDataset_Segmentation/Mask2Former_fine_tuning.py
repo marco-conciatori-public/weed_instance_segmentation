@@ -36,7 +36,7 @@ LEARNING_RATE = 5e-5
 EPOCHS = 10
 GRADIENT_ACCUMULATION = 2
 MAX_INPUT_DIM = 1024  # Resize images larger than this to save VRAM
-MAX_IMAGES = 10
+MAX_IMAGES = 25
 
 # Class Mapping (Internal ID -> Name)
 # Mask2Former uses background implicitly
