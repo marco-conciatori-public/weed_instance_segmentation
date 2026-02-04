@@ -128,7 +128,6 @@ class WeedDataset(Dataset):
             images=[image],
             segmentation_maps=[instance_map],
             instance_id_to_semantic_id=instance_id_to_semantic_id,
-            task_inputs=["instance"],
             return_tensors="pt"
         )
 
