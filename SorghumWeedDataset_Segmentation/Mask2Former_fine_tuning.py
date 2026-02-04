@@ -128,7 +128,8 @@ class WeedDataset(Dataset):
             images=[image],
             segmentation_maps=[instance_map],
             instance_id_to_semantic_id=instance_id_to_semantic_id,
-            return_tensors="pt"
+            return_tensors="pt",
+            ignore_index=0  # Background pixels will be ignored in loss computation
         )
 
         # Un-batch the output from processor (list of length 1)
