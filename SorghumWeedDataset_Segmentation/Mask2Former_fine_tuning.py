@@ -281,7 +281,7 @@ def train(output_dir, metadata):
                 save_path = os.path.join(output_dir, "best_model")
                 model.save_pretrained(save_path)
                 processor.save_pretrained(save_path)
-                print(f"Saved new best model to {save_path} with validation loss: {best_val_loss:.4f}")
+                print(f"\nSaved new best model to {save_path} with validation loss: {best_val_loss:.4f}")
 
     print("Training Complete")
 
