@@ -15,9 +15,9 @@ TEST_ANNOTATIONS_FILE = ANNOTATION_FOLDER_PATH + 'TestSorghumWeed_json.json'
 
 
 def visualize_dataset(image_folder: str, annotation_file: str) -> None:
-    '''
+    """
     Visualizes one image from the dataset with VIA (VGG Image Annotator) polygon annotations.
-    '''
+    """
 
     # 1. Check if paths exist
     if not os.path.exists(annotation_file):
@@ -83,8 +83,8 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
                     poly_points = list(zip(all_x, all_y))
 
                     # Determine class and color
-                    classname = region_attr.get('classname', 'default')
-                    color = class_colors.get(classname, class_colors['default'])
+                    class_name = region_attr.get('classname', 'default')
+                    color = class_colors.get(class_name, class_colors['default'])
 
                     # Create the polygon patch
                     # alpha controls transparency (0.3 is 30% opaque)
@@ -99,8 +99,8 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
                     ax.add_patch(border)
 
                     # Store for legend
-                    if classname not in legend_patches:
-                        legend_patches[classname] = poly
+                    if class_name not in legend_patches:
+                        legend_patches[class_name] = poly
 
             # 7. Final Formatting
             ax.set_title(f'Annotation: {entry['filename']}', fontsize=14)
