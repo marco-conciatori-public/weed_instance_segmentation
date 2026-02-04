@@ -232,7 +232,7 @@ def training():
         avg_loss = total_loss / len(train_loader)
         print(f"Epoch {epoch + 1} Complete. Average Loss: {avg_loss:.4f}")
 
-        if epoch % 5 == 0:
+        if (epoch + 1) % 5 == 0:
             # Save Checkpoint
             save_path = os.path.join(OUTPUT_DIR, f"checkpoint-epoch-{epoch + 1}")
             model.save_pretrained(save_path)
