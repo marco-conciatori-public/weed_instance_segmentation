@@ -3,13 +3,13 @@ import cv2
 import json
 import torch
 import warnings
-from datetime import datetime
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+from datetime import datetime
 from torch.utils.data import Dataset, DataLoader
-from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 from torchmetrics.detection import MeanAveragePrecision
+from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 # Suppress specific warning about unused arguments in preprocessor config
 # This occurs because the checkpoint config has keys not used by the current processor version
