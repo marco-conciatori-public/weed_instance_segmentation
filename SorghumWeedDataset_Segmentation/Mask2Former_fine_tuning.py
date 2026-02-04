@@ -14,6 +14,8 @@ TRAIN_IMG_DIR = os.path.join(DATASET_ROOT, 'Train/')
 TRAIN_JSON = os.path.join(DATASET_ROOT, 'Annotations/TrainSorghumWeed_json.json')
 VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validation/')
 VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
+TEST_IMG_DIR = os.path.join(DATASET_ROOT, 'Test/')
+TEST_JSON = os.path.join(DATASET_ROOT, 'Annotations/TestSorghumWeed_json.json')
 OUTPUT_DIR = 'models/mask2former_finetuned'
 
 # Model Config
@@ -159,7 +161,8 @@ def training():
     processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
 
     # 2. Datasets & Loaders
-    train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
+    # TODO: change back to using training dataset, using test for checks because in is smaller
+    train_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
     # Using Train set for validation just to check code logic, ideally use Val set
     val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
 
