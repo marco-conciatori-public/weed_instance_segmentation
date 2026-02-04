@@ -20,7 +20,7 @@ warnings.filterwarnings(
 def main(args):
     """Main function to run the testing."""
     # run_dir = args.model_run_dir
-    run_dir = 'models/mask2former_finetuned/2026-02-04_21-46-40/'
+    run_dir = 'models/mask2former_fine_tuned/2026-02-04_21-46-40/'
     if not os.path.isdir(run_dir):
         print(f"Error: Directory not found at '{run_dir}'")
         return
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     # parser.add_argument(
     #     "model_run_dir",
     #     type=str,
-    #     help="Path to the specific training run directory (e.g., 'models/mask2former_finetuned/YYYY-MM-DD_HH-MM-SS')."
+    #     help="Path to the specific training run directory (e.g., 'models/mask2former_fine_tuned/YYYY-MM-DD_HH-MM-SS')."
     # )
     # cli_args = parser.parse_args()
     cli_args = None

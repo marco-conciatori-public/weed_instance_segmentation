@@ -8,7 +8,7 @@ VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validate/')
 VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
 TEST_IMG_DIR = os.path.join(DATASET_ROOT, 'Test/')
 TEST_JSON = os.path.join(DATASET_ROOT, 'Annotations/TestSorghumWeed_json.json')
-OUTPUT_DIR = 'models/mask2former_finetuned'
+OUTPUT_DIR = 'models/mask2former_fine_tuned'
 
 # Model Config
 MODEL_CHECKPOINT = 'facebook/mask2former-swin-large-coco-instance'
