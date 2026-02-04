@@ -423,7 +423,7 @@ def main():
         return
 
     # Use the processor associated with the trained model
-    processor = AutoImageProcessor.from_pretrained(final_model_path)
+    processor = AutoImageProcessor.from_pretrained(final_model_path, use_fast=False)
 
     # Create test dataset and loader
     test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
