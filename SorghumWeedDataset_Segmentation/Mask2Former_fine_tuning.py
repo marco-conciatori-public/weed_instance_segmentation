@@ -11,7 +11,11 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 # Suppress specific warning about unused arguments in preprocessor config
 # This occurs because the checkpoint config has keys not used by the current processor version
-warnings.filterwarnings("ignore", category=UserWarning, message=".*The following named arguments are not valid.*")
+warnings.filterwarnings(
+    action="ignore",
+    category=UserWarning,
+    message=".*The following named arguments are not valid.*"
+)
 
 # Paths
 DATASET_ROOT = 'F:/LAVORO/Miningful/weed_segmentation_dataset/SorghumWeedDataset_Segmentation/'
