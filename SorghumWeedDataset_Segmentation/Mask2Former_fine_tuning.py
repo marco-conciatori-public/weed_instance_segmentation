@@ -1,15 +1,23 @@
 import os
-import cv2
 import json
 import torch
 import warnings
-import numpy as np
-from PIL import Image
 from tqdm import tqdm
 from datetime import datetime
-from torch.utils.data import Dataset, DataLoader
-from torchmetrics.detection import MeanAveragePrecision
+from torch.utils.data import DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
+
+from config import (
+    TRAIN_IMG_DIR, TRAIN_JSON, VAL_IMG_DIR, VAL_JSON, TEST_IMG_DIR, TEST_JSON,
+    OUTPUT_DIR, MODEL_CHECKPOINT, BATCH_SIZE, LEARNING_RATE, EPOCHS,
+    GRADIENT_ACCUMULATION, MAX_INPUT_DIM, MAX_IMAGES, ID2LABEL, LABEL2ID
+)
+from data_utils import WeedDataset, collate_fn
+from evaluation_utils import (
+    test_with_metrics,
+    print_metrics,
+    prepare_metrics_for_json
+)
 
 # Suppress specific warning about unused arguments in preprocessor config
 # This occurs because the checkpoint config has keys not used by the current processor version
@@ -18,155 +26,6 @@ warnings.filterwarnings(
     category=UserWarning,
     message=".*The following named arguments are not valid.*"
 )
-
-# Paths
-DATASET_ROOT = 'F:/LAVORO/Miningful/weed_segmentation_dataset/SorghumWeedDataset_Segmentation/'
-TRAIN_IMG_DIR = os.path.join(DATASET_ROOT, 'Train/')
-TRAIN_JSON = os.path.join(DATASET_ROOT, 'Annotations/TrainSorghumWeed_json.json')
-VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validate/')
-VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
-TEST_IMG_DIR = os.path.join(DATASET_ROOT, 'Test/')
-TEST_JSON = os.path.join(DATASET_ROOT, 'Annotations/TestSorghumWeed_json.json')
-OUTPUT_DIR = 'models/mask2former_finetuned'
-
-# Model Config
-MODEL_CHECKPOINT = 'facebook/mask2former-swin-large-coco-instance'
-BATCH_SIZE = 2  # Reduce to 1 if OOM
-LEARNING_RATE = 5e-5
-EPOCHS = 10
-GRADIENT_ACCUMULATION = 2
-MAX_INPUT_DIM = 1024  # Resize images larger than this to save VRAM
-MAX_IMAGES = 25
-
-# Class Mapping (Internal ID -> Name)
-# Mask2Former uses background implicitly
-ID2LABEL = {
-    0: "Sorghum",
-    1: "BLweed",
-    2: "Grass"
-}
-LABEL2ID = {v: k for k, v in ID2LABEL.items()}
-
-
-class WeedDataset(Dataset):
-    def __init__(self, image_folder_path: str, annotation_file_path: str, processor):
-        self.image_folder = image_folder_path
-        self.processor = processor
-
-        # Load JSON data
-        with open(annotation_file_path, 'r') as f:
-            self.data = list(json.load(f).values())
-
-        # Filter out images that don't exist or have no regions
-        self.valid_entries = []
-        valid_image_count = 0
-        for entry in self.data:
-            img_path = os.path.join(self.image_folder, entry['filename'])
-            if os.path.exists(img_path) and len(entry.get('regions', [])) > 0:
-                self.valid_entries.append(entry)
-                valid_image_count += 1
-                if (MAX_IMAGES is not None) and (valid_image_count >= MAX_IMAGES):
-                    break
-
-        print(f"Loaded {len(self.valid_entries)} valid images from {annotation_file_path}")
-
-    def __len__(self):
-        return len(self.valid_entries)
-
-    def __getitem__(self, idx):
-        entry = self.valid_entries[idx]
-        image_path = os.path.join(self.image_folder, entry['filename'])
-
-        # 1. Load Image
-        image = Image.open(image_path).convert("RGB")
-        width, height = image.size
-        # print(f"Original image size: {width}x{height}")
-
-        # resizing logic
-        # 6000x4000 is too large. Resize to a max dimension (MAX_INPUT_DIM) to ensure the instance map
-        # creation doesn't consume too much RAM/CPU and to fit in VRAM
-        scale_factor = 1.0
-        if max(width, height) > MAX_INPUT_DIM:
-            scale_factor = MAX_INPUT_DIM / max(width, height)
-            new_width = int(width * scale_factor)
-            new_height = int(height * scale_factor)
-            image = image.resize((new_width, new_height), resample=Image.BILINEAR)
-            width, height = new_width, new_height  # Update dims for mask creation
-            # print(f"Resized image to: {width}x{height}")
-
-        target_size = (height, width)  # This is what we need for post-processing
-
-        # 2. Process Annotations (VIA Polygons -> Instance Maps)
-        # Mask2Former Processor expects:
-        # - segmentation_maps: (H, W) array where pixels = instance_id (1, 2, 3...)
-        # - instance_id_to_semantic_id: dict mapping {instance_id: class_id}
-
-        instance_map = np.zeros((height, width), dtype=np.int32)
-        instance_id_to_semantic_id = {}
-
-        regions = entry.get('regions', [])
-        current_instance_id = 1  # Start from 1, 0 is background
-
-        for region in regions:
-            shape_attr = region['shape_attributes']
-            region_attr = region['region_attributes']
-
-            if shape_attr['name'] != 'polygon':
-                continue
-
-            # Get class ID
-            class_name = region_attr.get('classname', None)
-            if class_name not in LABEL2ID:
-                continue  # Skip unknown classes
-            class_id = LABEL2ID[class_name]
-
-            # Draw polygon on the instance map
-            # NOTE: We must scale the polygon points if we resized the image
-            all_x = [int(x * scale_factor) for x in shape_attr['all_points_x']]
-            all_y = [int(y * scale_factor) for y in shape_attr['all_points_y']]
-            points = np.array(list(zip(all_x, all_y)), dtype=np.int32)
-
-            # Fill the polygon with the current_instance_id
-            cv2.fillPoly(instance_map, [points], color=current_instance_id)
-
-            # Record the mapping
-            instance_id_to_semantic_id[current_instance_id] = class_id
-            current_instance_id += 1
-
-        # 3. Use Processor to create tensor inputs
-        # on-the-fly preprocessing
-        inputs = self.processor(
-            images=[image],
-            segmentation_maps=[instance_map],
-            instance_id_to_semantic_id=instance_id_to_semantic_id,
-            return_tensors="pt",
-            ignore_index=0  # Background pixels will be ignored in loss computation
-        )
-
-        # Un-batch the output from processor (list of length 1)
-        return {
-            "pixel_values": inputs["pixel_values"][0],
-            "mask_labels": inputs["mask_labels"][0],
-            "class_labels": inputs["class_labels"][0],
-            "target_size": target_size
-        }
-
-
-def collate_fn(batch):
-    # Custom collator to handle list of tensors of variable sizes (for mask_labels/class_labels)
-    pixel_values = torch.stack([item["pixel_values"] for item in batch])
-
-    # mask_labels and class_labels are lists because number of instances varies per image
-    mask_labels = [item["mask_labels"] for item in batch]
-    class_labels = [item["class_labels"] for item in batch]
-    target_sizes = [item["target_size"] for item in batch]
-
-    return {
-        "pixel_values": pixel_values,
-        "mask_labels": mask_labels,
-        "class_labels": class_labels,
-        "target_sizes": target_sizes
-    }
 
 
 def evaluate(model, data_loader, device, desc="Evaluating"):
@@ -295,106 +154,6 @@ def train(output_dir, metadata):
     metadata['training']['best_validation_loss'] = best_val_loss if best_val_loss != float('inf') else None
 
     return metadata
-
-
-def test_with_metrics(model, processor, data_loader, device):
-    """
-    Evaluates the model on the test set using detailed metrics (mAP).
-    Note: This requires the `torchmetrics` library to be installed (`pip install torchmetrics`).
-    """
-    model.eval()
-    # The metric expects a list of predictions and a list of targets.
-    # Each prediction is a dict with 'masks', 'scores', 'labels'.
-    # Each target is a dict with 'masks', 'labels'.
-    map_metric = MeanAveragePrecision(iou_type="segm")
-
-    for batch in tqdm(data_loader, desc="Calculating Metrics"):
-        pixel_values = batch["pixel_values"].to(device)
-        target_sizes = batch["target_sizes"]  # List of (height, width) tuples
-
-        # Prepare ground truth targets for the metric
-        targets = []
-        for i in range(len(pixel_values)):
-            # The metric expects boolean masks, but the processor provides float masks.
-            targets.append({
-                "masks": batch["mask_labels"][i].to(torch.bool),
-                "labels": batch["class_labels"][i],
-            })
-
-        # Perform inference
-        with torch.no_grad():
-            outputs = model(pixel_values=pixel_values)
-
-        # Post-process outputs to get instance segmentation predictions
-        # This returns a list of dicts, one for each image in the batch
-        predictions = processor.post_process_instance_segmentation(
-            outputs,
-            target_sizes=target_sizes,
-            threshold=0.5,  # Confidence threshold for predictions
-            mask_threshold=0.5  # Threshold to binarize masks
-        )
-
-        # Convert predictions to the format expected by torchmetrics and move to CPU
-        formatted_predictions = []
-        for pred in predictions:
-            # pred contains 'segmentation' (H, W) tensor and 'segments_info' (list of dicts)
-            segments_info = pred['segments_info']
-
-            # Handle cases with no detections
-            if not segments_info:
-                formatted_predictions.append({
-                    'masks': torch.empty(0, *pred['segmentation'].shape, dtype=torch.bool, device='cpu'),
-                    'scores': torch.empty(0, device='cpu'),
-                    'labels': torch.empty(0, dtype=torch.long, device='cpu'),
-                })
-                continue
-
-            # Extract scores and labels
-            scores = torch.tensor([info['score'] for info in segments_info])
-            labels = torch.tensor([info['label_id'] for info in segments_info])
-
-            # Create a boolean mask for each instance from the instance map
-            instance_map = pred['segmentation']
-            instance_ids = [info['id'] for info in segments_info]
-            masks = torch.stack([instance_map == iid for iid in instance_ids])
-
-            formatted_predictions.append({
-                'masks': masks.cpu(),
-                'scores': scores.cpu(),
-                'labels': labels.cpu(),
-            })
-
-        map_metric.update(formatted_predictions, targets)
-
-    # Compute and return the final metrics
-    results = map_metric.compute()
-    model.train()  # Set model back to training mode
-    return results
-
-
-def print_metrics(metrics, model_name="Model"):
-    """Helper function to print metrics from torchmetrics."""
-    print(f"\n--- {model_name} Metrics ---")
-    if not metrics:
-        print("No metrics calculated.")
-        return
-
-    # Main mAP metrics
-    print(f"  mAP:              {metrics.get('map', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (IoU=0.50):   {metrics.get('map_50', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (IoU=0.75):   {metrics.get('map_75', torch.tensor(-1)).item():.4f}")
-    print("-" * 25)
-    # mAP for different area sizes
-    print(f"  mAP (small):      {metrics.get('map_small', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (medium):     {metrics.get('map_medium', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (large):      {metrics.get('map_large', torch.tensor(-1)).item():.4f}")
-
-
-def prepare_metrics_for_json(metrics):
-    """Converts tensors in metrics dict to floats for JSON serialization."""
-    if not metrics:
-        return None
-    return {k: v.item() if isinstance(v, torch.Tensor) else v for k, v in metrics.items()}
 
 
 def main():
