@@ -333,14 +333,37 @@ def test_with_metrics(model, processor, data_loader, device):
             mask_threshold=0.5  # Threshold to binarize masks
         )
 
-        # The metric expects predictions and targets to be on the same device.
-        # The processor puts predictions on the model's device. Targets are on CPU.
-        # We'll move predictions to CPU.
-        cpu_predictions = []
+        # Convert predictions to the format expected by torchmetrics and move to CPU
+        formatted_predictions = []
         for pred in predictions:
-            cpu_predictions.append({k: v.cpu() for k, v in pred.items()})
+            # pred contains 'segmentation' (H, W) tensor and 'segments_info' (list of dicts)
+            segments_info = pred['segments_info']
 
-        map_metric.update(cpu_predictions, targets)
+            # Handle cases with no detections
+            if not segments_info:
+                formatted_predictions.append({
+                    'masks': torch.empty(0, *pred['segmentation'].shape, dtype=torch.bool, device='cpu'),
+                    'scores': torch.empty(0, device='cpu'),
+                    'labels': torch.empty(0, dtype=torch.long, device='cpu'),
+                })
+                continue
+
+            # Extract scores and labels
+            scores = torch.tensor([info['score'] for info in segments_info])
+            labels = torch.tensor([info['label_id'] for info in segments_info])
+
+            # Create a boolean mask for each instance from the instance map
+            instance_map = pred['segmentation']
+            instance_ids = [info['id'] for info in segments_info]
+            masks = torch.stack([instance_map == iid for iid in instance_ids])
+
+            formatted_predictions.append({
+                'masks': masks.cpu(),
+                'scores': scores.cpu(),
+                'labels': labels.cpu(),
+            })
+
+        map_metric.update(formatted_predictions, targets)
 
     # Compute and return the final metrics
     results = map_metric.compute()
