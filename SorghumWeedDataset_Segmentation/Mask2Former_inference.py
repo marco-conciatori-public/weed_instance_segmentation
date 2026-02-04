@@ -15,7 +15,8 @@ def load_model():
     # 'facebook/mask2former-swin-large-coco-instance' is the high-accuracy
     # checkpoint fine-tuned for instance segmentation.
     # model_id_or_path = 'facebook/mask2former-swin-large-coco-instance'
-    model_id_or_path = 'models/mask2former_finetuned/final_model'
+    model_id_or_path = 'models/mask2former_finetuned/2026-02-04_20-56-07/best_model'
+    # model_id_or_path = 'models/mask2former_finetuned/2026-02-04_20-56-07/final_model'
     print(f'Loading {model_id_or_path}...')
 
     processor = AutoImageProcessor.from_pretrained(model_id_or_path, use_fast=False)
