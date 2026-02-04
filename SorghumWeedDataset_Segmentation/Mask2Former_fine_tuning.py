@@ -3,6 +3,7 @@ import cv2
 import json
 import torch
 import warnings
+from datetime import datetime
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
@@ -190,12 +191,12 @@ def evaluate(model, data_loader, device, desc="Evaluating"):
     return avg_loss
 
 
-def train():
+def train(output_dir):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on: {device}")
 
     # Create output directory
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # 1. Initialize Processor
     processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
@@ -269,7 +270,7 @@ def train():
 
             if avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
-                save_path = os.path.join(OUTPUT_DIR, "best_model")
+                save_path = os.path.join(output_dir, "best_model")
                 model.save_pretrained(save_path)
                 processor.save_pretrained(save_path)
                 print(f"Saved new best model to {save_path} with validation loss: {best_val_loss:.4f}")
@@ -277,23 +278,28 @@ def train():
     print("Training Complete")
 
     # Save Final Model
-    final_path = os.path.join(OUTPUT_DIR, "final_model")
+    final_path = os.path.join(output_dir, "final_model")
     model.save_pretrained(final_path)
     processor.save_pretrained(final_path)
     print(f"Final model saved to {final_path}")
 
 
 def main():
+    # Create a unique output directory for this run based on the current time
+    run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_output_dir = os.path.join(OUTPUT_DIR, run_timestamp)
+    print(f"Results for this run will be saved in: {run_output_dir}")
+
     # Run training
-    train()
+    train(run_output_dir)
 
     # --- Testing Step ---
     print("\n--- Starting Final Testing ---")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Paths to the models saved during training
-    final_model_path = os.path.join(OUTPUT_DIR, "final_model")
-    best_model_path = os.path.join(OUTPUT_DIR, "best_model")
+    final_model_path = os.path.join(run_output_dir, "final_model")
+    best_model_path = os.path.join(run_output_dir, "best_model")
 
     # We need a processor to create the test dataset.
     # It's best to load the one saved with the model to ensure consistency.
