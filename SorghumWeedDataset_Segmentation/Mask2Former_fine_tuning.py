@@ -34,6 +34,7 @@ LEARNING_RATE = 5e-5
 EPOCHS = 10
 GRADIENT_ACCUMULATION = 2
 MAX_INPUT_DIM = 1024  # Resize images larger than this to save VRAM
+MAX_IMAGES = 10
 
 # Class Mapping (Internal ID -> Name)
 # Mask2Former uses background implicitly
@@ -56,10 +57,14 @@ class WeedDataset(Dataset):
 
         # Filter out images that don't exist or have no regions
         self.valid_entries = []
+        valid_image_count = 0
         for entry in self.data:
             img_path = os.path.join(self.image_folder, entry['filename'])
             if os.path.exists(img_path) and len(entry.get('regions', [])) > 0:
                 self.valid_entries.append(entry)
+                valid_image_count += 1
+                if (MAX_IMAGES is not None) and (valid_image_count >= MAX_IMAGES):
+                    break
 
         print(f"Loaded {len(self.valid_entries)} valid images from {annotation_file_path}")
 
