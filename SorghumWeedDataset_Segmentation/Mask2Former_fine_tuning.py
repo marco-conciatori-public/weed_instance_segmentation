@@ -69,11 +69,11 @@ class WeedDataset(Dataset):
         # 1. Load Image
         image = Image.open(image_path).convert("RGB")
         width, height = image.size
-        print(f"Original image size: {width}x{height}")
+        # print(f"Original image size: {width}x{height}")
 
         # resizing logic
         # 6000x4000 is too large. Resize to a max dimension (MAX_INPUT_DIM) to ensure the instance map
-        # creation doesn't consume too much RAM/CPU and to fit in VRAM.
+        # creation doesn't consume too much RAM/CPU and to fit in VRAM
         scale_factor = 1.0
         if max(width, height) > MAX_INPUT_DIM:
             scale_factor = MAX_INPUT_DIM / max(width, height)
@@ -81,7 +81,7 @@ class WeedDataset(Dataset):
             new_height = int(height * scale_factor)
             image = image.resize((new_width, new_height), resample=Image.BILINEAR)
             width, height = new_width, new_height  # Update dims for mask creation
-            print(f"Resized image to: {width}x{height}")
+            # print(f"Resized image to: {width}x{height}")
 
         # 2. Process Annotations (VIA Polygons -> Instance Maps)
         # Mask2Former Processor expects:
