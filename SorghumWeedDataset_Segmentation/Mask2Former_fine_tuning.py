@@ -22,6 +22,7 @@ BATCH_SIZE = 2  # Reduce to 1 if OOM
 LEARNING_RATE = 5e-5
 EPOCHS = 10
 GRADIENT_ACCUMULATION = 2
+MAX_INPUT_DIM = 1024  # Resize images larger than this to save VRAM
 
 # Class Mapping (Internal ID -> Name)
 # Mask2Former uses background implicitly
@@ -61,6 +62,19 @@ class WeedDataset(Dataset):
         # 1. Load Image
         image = Image.open(image_path).convert("RGB")
         width, height = image.size
+        print(f"Original image size: {width}x{height}")
+
+        # resizing logic
+        # 6000x4000 is too large. Resize to a max dimension (MAX_INPUT_DIM) to ensure the instance map
+        # creation doesn't consume too much RAM/CPU and to fit in VRAM.
+        scale_factor = 1.0
+        if max(width, height) > MAX_INPUT_DIM:
+            scale_factor = MAX_INPUT_DIM / max(width, height)
+            new_width = int(width * scale_factor)
+            new_height = int(height * scale_factor)
+            image = image.resize((new_width, new_height), resample=Image.BILINEAR)
+            width, height = new_width, new_height  # Update dims for mask creation
+            print(f"Resized image to: {width}x{height}")
 
         # 2. Process Annotations (VIA Polygons -> Instance Maps)
         # Mask2Former Processor expects:
@@ -88,8 +102,10 @@ class WeedDataset(Dataset):
             class_id = LABEL2ID[class_name]
 
             # Draw polygon on the instance map
-            all_x = shape_attr['all_points_x']
-            all_y = shape_attr['all_points_y']
+            # NOTE: We must scale the polygon points if we resized the image
+            all_x = [int(x * scale_factor) for x in shape_attr['all_points_x']]
+            all_y = [int(y * scale_factor) for y in shape_attr['all_points_y']]
+
             points = np.array(list(zip(all_x, all_y)), dtype=np.int32)
 
             # Fill the polygon with the current_instance_id
