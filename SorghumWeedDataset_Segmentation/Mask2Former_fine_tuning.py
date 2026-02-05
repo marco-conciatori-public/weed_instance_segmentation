@@ -199,8 +199,7 @@ def main():
     final_model_path = os.path.join(run_output_dir, "final_model")
     best_model_path = os.path.join(run_output_dir, "best_model")
 
-    # We need a processor to create the test dataset.
-    # It's best to load the one saved with the model to ensure consistency.
+    # load the processor saved with the model to create the test dataset
     if not os.path.exists(final_model_path):
         print("Final model not found. Skipping testing.")
         return
