@@ -51,7 +51,7 @@ def main(args):
         print(f"\nTesting final model from: {final_model_path}")
         model = Mask2FormerForUniversalSegmentation.from_pretrained(final_model_path).to(device)
         metrics = test_with_metrics(model, processor, test_loader, device)
-        print_metrics(metrics, "Final Model")
+        print_metrics(metrics=metrics, model_name="Final Model")
     else:
         print("\n'final_model' not found. Skipping.")
 
@@ -59,7 +59,7 @@ def main(args):
         print(f"\nTesting best model from: {best_model_path}")
         model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
         metrics = test_with_metrics(model, processor, test_loader, device)
-        print_metrics(metrics, "Best Model")
+        print_metrics(metrics=metrics, model_name="Best Model")
     else:
         print("\n'best_model' not found. Skipping.")
 

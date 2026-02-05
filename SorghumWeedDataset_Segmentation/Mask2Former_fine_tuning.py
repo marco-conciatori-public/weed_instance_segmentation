@@ -199,12 +199,10 @@ def main():
     final_model_path = os.path.join(run_output_dir, "final_model")
     best_model_path = os.path.join(run_output_dir, "best_model")
 
-    # load the processor saved with the model to create the test dataset
+    # Load the processor saved with the model to create the test dataset
     if not os.path.exists(final_model_path):
         print("Final model not found. Skipping testing.")
         return
-
-    # Use the processor associated with the trained model
     processor = AutoImageProcessor.from_pretrained(final_model_path, use_fast=False)
 
     # Create test dataset and loader
@@ -215,20 +213,20 @@ def main():
 
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
-    # Test the 'final_model'
+    # Test the final_model
     print(f"\nTesting final model from: {final_model_path}")
     final_model = Mask2FormerForUniversalSegmentation.from_pretrained(final_model_path).to(device)
     final_model_metrics = test_with_metrics(final_model, processor, test_loader, device)
     metadata['testing']['final_model_metrics'] = prepare_metrics_for_json(final_model_metrics)
-    print_metrics(final_model_metrics, "Final Model")
+    print_metrics(metrics=final_model_metrics, model_name="Final Model")
 
-    # Test the 'best_model' if it exists
+    # Test the best_model
     if os.path.exists(best_model_path):
         print(f"\nTesting best model from: {best_model_path}")
         best_model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
         best_model_metrics = test_with_metrics(best_model, processor, test_loader, device)
         metadata['testing']['best_model_metrics'] = prepare_metrics_for_json(best_model_metrics)
-        print_metrics(best_model_metrics, "Best Model")
+        print_metrics(metrics=best_model_metrics, model_name="Best Model")
     else:
         metadata['testing']['best_model_metrics'] = None
 
