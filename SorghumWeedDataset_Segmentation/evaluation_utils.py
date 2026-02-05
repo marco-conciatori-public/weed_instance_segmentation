@@ -63,20 +63,20 @@ def test_with_metrics(model, processor, data_loader, device):
     return results
 
 
-def print_metrics(metrics, model_name="Model"):
+def print_metrics_evaluation(metrics_evaluation, model_name: str = "Model"):
     """Helper function to print metrics from torchmetrics."""
     print(f"\n--- {model_name} Metrics ---")
-    if not metrics:
+    if not metrics_evaluation:
         print("No metrics calculated.")
         return
 
-    print(f"  mAP:              {metrics.get('map', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (IoU=0.50):   {metrics.get('map_50', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (IoU=0.75):   {metrics.get('map_75', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP:              {metrics_evaluation.get('map', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (IoU=0.50):   {metrics_evaluation.get('map_50', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (IoU=0.75):   {metrics_evaluation.get('map_75', torch.tensor(-1)).item():.4f}")
     print("-" * 25)
-    print(f"  mAP (small):      {metrics.get('map_small', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (medium):     {metrics.get('map_medium', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (large):      {metrics.get('map_large', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (small):      {metrics_evaluation.get('map_small', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (medium):     {metrics_evaluation.get('map_medium', torch.tensor(-1)).item():.4f}")
+    print(f"  mAP (large):      {metrics_evaluation.get('map_large', torch.tensor(-1)).item():.4f}")
 
 
 def prepare_metrics_for_json(metrics):

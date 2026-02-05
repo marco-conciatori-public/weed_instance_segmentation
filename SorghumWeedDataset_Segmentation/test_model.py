@@ -7,7 +7,7 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 from config import TEST_IMG_DIR, TEST_JSON, BATCH_SIZE
 from data_utils import WeedDataset, collate_fn
-from evaluation_utils import test_with_metrics, print_metrics
+from evaluation_utils import test_with_metrics, print_metrics_evaluation
 
 # Suppress specific warning about unused arguments in preprocessor config
 warnings.filterwarnings(
@@ -50,16 +50,16 @@ def main(args):
     if os.path.exists(final_model_path):
         print(f"\nTesting final model from: {final_model_path}")
         model = Mask2FormerForUniversalSegmentation.from_pretrained(final_model_path).to(device)
-        metrics = test_with_metrics(model, processor, test_loader, device)
-        print_metrics(metrics=metrics, model_name="Final Model")
+        metrics_evaluation = test_with_metrics(model, processor, test_loader, device)
+        print_metrics_evaluation(metrics_evaluation=metrics_evaluation, model_name="Final Model")
     else:
         print("\n'final_model' not found. Skipping.")
 
     if os.path.exists(best_model_path):
         print(f"\nTesting best model from: {best_model_path}")
         model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
-        metrics = test_with_metrics(model, processor, test_loader, device)
-        print_metrics(metrics=metrics, model_name="Best Model")
+        metrics_evaluation = test_with_metrics(model, processor, test_loader, device)
+        print_metrics_evaluation(metrics_evaluation=metrics_evaluation, model_name="Best Model")
     else:
         print("\n'best_model' not found. Skipping.")
 

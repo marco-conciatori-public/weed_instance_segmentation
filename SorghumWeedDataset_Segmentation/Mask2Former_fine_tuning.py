@@ -15,7 +15,7 @@ from config import (
 from data_utils import WeedDataset, collate_fn
 from evaluation_utils import (
     test_with_metrics,
-    print_metrics,
+    print_metrics_evaluation,
     prepare_metrics_for_json
 )
 
@@ -216,17 +216,17 @@ def main():
     # Test the final_model
     print(f"\nTesting final model from: {final_model_path}")
     final_model = Mask2FormerForUniversalSegmentation.from_pretrained(final_model_path).to(device)
-    final_model_metrics = test_with_metrics(final_model, processor, test_loader, device)
-    metadata['testing']['final_model_metrics'] = prepare_metrics_for_json(final_model_metrics)
-    print_metrics(metrics=final_model_metrics, model_name="Final Model")
+    final_model_evaluation = test_with_metrics(final_model, processor, test_loader, device)
+    metadata['testing']['final_model_evaluation'] = prepare_metrics_for_json(final_model_evaluation)
+    print_metrics_evaluation(metrics_evaluation=final_model_evaluation, model_name="Final Model")
 
     # Test the best_model
     if os.path.exists(best_model_path):
         print(f"\nTesting best model from: {best_model_path}")
         best_model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
-        best_model_metrics = test_with_metrics(best_model, processor, test_loader, device)
-        metadata['testing']['best_model_metrics'] = prepare_metrics_for_json(best_model_metrics)
-        print_metrics(metrics=best_model_metrics, model_name="Best Model")
+        best_model_evaluation = test_with_metrics(best_model, processor, test_loader, device)
+        metadata['testing']['best_model_evaluation'] = prepare_metrics_for_json(best_model_evaluation)
+        print_metrics_evaluation(metrics_evaluation=best_model_evaluation, model_name="Best Model")
     else:
         metadata['testing']['best_model_metrics'] = None
 
