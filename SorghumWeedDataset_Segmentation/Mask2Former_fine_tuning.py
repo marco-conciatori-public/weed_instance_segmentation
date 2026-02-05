@@ -2,7 +2,6 @@ import os
 import json
 import torch
 import warnings
-from tqdm import tqdm
 from datetime import datetime
 from torch.utils.data import DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
@@ -32,8 +31,9 @@ def evaluate(model, data_loader, device, desc='Evaluating'):
     """Evaluates the model on a given dataset and returns the average loss."""
     model.eval()
     total_loss = 0
+    print(f'Starting: {desc}')
     with torch.no_grad():
-        for batch in tqdm(data_loader, desc=desc):
+        for i, batch in enumerate(data_loader):
             # Move batch to device
             pixel_values = batch['pixel_values'].to(device)
             mask_labels = [labels.to(device) for labels in batch['mask_labels']]
@@ -48,6 +48,10 @@ def evaluate(model, data_loader, device, desc='Evaluating'):
 
             loss = outputs.loss
             total_loss += loss.item()
+
+            # Print progress every 10 batches
+            if (i + 1) % 10 == 0:
+                print(f'  {desc} Step {i + 1}/{len(data_loader)} - Loss: {loss.item():.4f}')
 
     avg_loss = total_loss / len(data_loader)
     model.train()  # Set model back to training mode
@@ -94,9 +98,9 @@ def train(output_dir, metadata):
 
     for epoch in range(EPOCHS):
         total_loss = 0
-        progress_bar = tqdm(train_loader, desc=f'Epoch {epoch + 1}/{EPOCHS}')
+        print(f'\nEpoch {epoch + 1}/{EPOCHS}')
 
-        for step, batch in enumerate(progress_bar):
+        for step, batch in enumerate(train_loader):
             # Move batch to device
             pixel_values = batch['pixel_values'].to(device)
             mask_labels = [labels.to(device) for labels in batch['mask_labels']]
@@ -122,7 +126,9 @@ def train(output_dir, metadata):
 
             current_loss = loss.item() * GRADIENT_ACCUMULATION
             total_loss += current_loss
-            progress_bar.set_postfix({'loss': f'{current_loss:.4f}'})
+
+            # Print progress every step or every few steps
+            print(f'  Step {step + 1}/{len(train_loader)} - Loss: {current_loss:.4f}')
 
         avg_train_loss = total_loss / len(train_loader)
         print(f'Epoch {epoch + 1} Complete. Average Training Loss: {avg_train_loss:.4f}')

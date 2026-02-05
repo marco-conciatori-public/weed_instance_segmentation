@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from tqdm import tqdm
 from torchmetrics.detection import MeanAveragePrecision
 
 
@@ -11,7 +10,11 @@ def test_with_metrics(model, processor, data_loader, device):
     model.eval()
     map_metric = MeanAveragePrecision(iou_type='segm')
 
-    for batch in tqdm(data_loader, desc='Calculating Metrics'):
+    print('Calculating Metrics...')
+    for i, batch in enumerate(data_loader):
+        if (i + 1) % 5 == 0:
+            print(f'  Processing batch {i + 1}/{len(data_loader)}')
+
         pixel_values = batch['pixel_values'].to(device)
         target_sizes = batch['target_sizes']
 
@@ -22,9 +25,9 @@ def test_with_metrics(model, processor, data_loader, device):
         original_maps = batch['original_maps']
         id_mappings = batch['id_mappings']
 
-        for i in range(len(pixel_values)):
-            gt_map = original_maps[i]
-            mapping = id_mappings[i]
+        for k in range(len(pixel_values)):
+            gt_map = original_maps[k]
+            mapping = id_mappings[k]
 
             masks = []
             labels = []
