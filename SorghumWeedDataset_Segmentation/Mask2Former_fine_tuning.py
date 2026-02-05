@@ -27,7 +27,7 @@ warnings.filterwarnings(
 )
 
 
-def evaluate(model, data_loader, device, desc='Evaluating'):
+def evaluate(model, data_loader, device, desc: str = 'Evaluating'):
     """Evaluates the model on a given dataset and returns the average loss."""
     model.eval()
     total_loss = 0
@@ -58,7 +58,7 @@ def evaluate(model, data_loader, device, desc='Evaluating'):
     return avg_loss
 
 
-def train(output_dir, metadata):
+def train(output_dir, metadata: dict):
     train_start_time = datetime.now()
     metadata['training'] = {
         'start_time': train_start_time.isoformat()
@@ -77,8 +77,7 @@ def train(output_dir, metadata):
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     # 3. Initialize Model
-    # ignore_mismatched_sizes=True because it is replacing the 80-class COCO head
-    # with our 3-class head.
+    # ignore_mismatched_sizes=True because it is replacing the 80-class COCO head with our 3-class head.
     model = Mask2FormerForUniversalSegmentation.from_pretrained(
         MODEL_CHECKPOINT,
         id2label=ID2LABEL,
