@@ -111,17 +111,36 @@ def print_metrics_evaluation(metrics_evaluation, model_name: str = 'Model'):
         print('No metrics calculated.')
         return
 
-    print(f'  mAP:              {metrics_evaluation.get("map", torch.tensor(-1)).item():.4f}')
-    print(f'  mAP (IoU=0.50):   {metrics_evaluation.get("map_50", torch.tensor(-1)).item():.4f}')
-    print(f'  mAP (IoU=0.75):   {metrics_evaluation.get("map_75", torch.tensor(-1)).item():.4f}')
+    # Helper to safely get scalar item
+    def get_scalar(key):
+        val = metrics_evaluation.get(key, torch.tensor(-1))
+        # Ensure we only call .item() on scalars
+        return val.item() if val.numel() == 1 else -1
+
+    print(f'  mAP:              {get_scalar("map"):.4f}')
+    print(f'  mAP (IoU=0.50):   {get_scalar("map_50"):.4f}')
+    print(f'  mAP (IoU=0.75):   {get_scalar("map_75"):.4f}')
     print('-' * 25)
-    print(f'  mAP (small):      {metrics_evaluation.get("map_small", torch.tensor(-1)).item():.4f}')
-    print(f'  mAP (medium):     {metrics_evaluation.get("map_medium", torch.tensor(-1)).item():.4f}')
-    print(f'  mAP (large):      {metrics_evaluation.get("map_large", torch.tensor(-1)).item():.4f}')
+    print(f'  mAP (small):      {get_scalar("map_small"):.4f}')
+    print(f'  mAP (medium):     {get_scalar("map_medium"):.4f}')
+    print(f'  mAP (large):      {get_scalar("map_large"):.4f}')
 
 
 def prepare_metrics_for_json(metrics):
-    """Converts tensors in metrics dict to floats for JSON serialization."""
+    """Converts tensors in metrics dict to floats/lists for JSON serialization."""
     if not metrics:
         return None
-    return {k: v.item() if isinstance(v, torch.Tensor) else v for k, v in metrics.items()}
+
+    clean_metrics = {}
+    for k, v in metrics.items():
+        if isinstance(v, torch.Tensor):
+            # If scalar, convert to float (e.g. mAP)
+            if v.numel() == 1:
+                clean_metrics[k] = v.item()
+            # If vector/array, convert to list (e.g. classes tensor)
+            else:
+                clean_metrics[k] = v.tolist()
+        else:
+            clean_metrics[k] = v
+
+    return clean_metrics
