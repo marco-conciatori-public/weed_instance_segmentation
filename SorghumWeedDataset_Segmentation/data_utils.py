@@ -29,7 +29,7 @@ class WeedDataset(Dataset):
                 if (MAX_IMAGES is not None) and (valid_image_count >= MAX_IMAGES):
                     break
 
-        print(f"Loaded {len(self.valid_entries)} valid images from {annotation_file_path}")
+        print(f'Loaded {len(self.valid_entries)} valid images from {annotation_file_path}')
 
     def __len__(self):
         return len(self.valid_entries)
@@ -38,7 +38,7 @@ class WeedDataset(Dataset):
         entry = self.valid_entries[idx]
         image_path = os.path.join(self.image_folder, entry['filename'])
 
-        image = Image.open(image_path).convert("RGB")
+        image = Image.open(image_path).convert('RGB')
         width, height = image.size
 
         scale_factor = 1.0
@@ -82,27 +82,27 @@ class WeedDataset(Dataset):
             images=[image],
             segmentation_maps=[instance_map],
             instance_id_to_semantic_id=instance_id_to_semantic_id,
-            return_tensors="pt",
+            return_tensors='pt',
             ignore_index=0
         )
 
         return {
-            "pixel_values": inputs["pixel_values"][0],
-            "mask_labels": inputs["mask_labels"][0],
-            "class_labels": inputs["class_labels"][0],
-            "target_size": target_size
+            'pixel_values': inputs['pixel_values'][0],
+            'mask_labels': inputs['mask_labels'][0],
+            'class_labels': inputs['class_labels'][0],
+            'target_size': target_size
         }
 
 
 def collate_fn(batch):
-    pixel_values = torch.stack([item["pixel_values"] for item in batch])
-    mask_labels = [item["mask_labels"] for item in batch]
-    class_labels = [item["class_labels"] for item in batch]
-    target_sizes = [item["target_size"] for item in batch]
+    pixel_values = torch.stack([item['pixel_values'] for item in batch])
+    mask_labels = [item['mask_labels'] for item in batch]
+    class_labels = [item['class_labels'] for item in batch]
+    target_sizes = [item['target_size'] for item in batch]
 
     return {
-        "pixel_values": pixel_values,
-        "mask_labels": mask_labels,
-        "class_labels": class_labels,
-        "target_sizes": target_sizes
+        'pixel_values': pixel_values,
+        'mask_labels': mask_labels,
+        'class_labels': class_labels,
+        'target_sizes': target_sizes
     }

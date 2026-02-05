@@ -8,17 +8,17 @@ def test_with_metrics(model, processor, data_loader, device):
     Evaluates the model on the test set using detailed metrics (mAP).
     """
     model.eval()
-    map_metric = MeanAveragePrecision(iou_type="segm")
+    map_metric = MeanAveragePrecision(iou_type='segm')
 
-    for batch in tqdm(data_loader, desc="Calculating Metrics"):
-        pixel_values = batch["pixel_values"].to(device)
-        target_sizes = batch["target_sizes"]
+    for batch in tqdm(data_loader, desc='Calculating Metrics'):
+        pixel_values = batch['pixel_values'].to(device)
+        target_sizes = batch['target_sizes']
 
         targets = []
         for i in range(len(pixel_values)):
             targets.append({
-                "masks": batch["mask_labels"][i].to(torch.bool),
-                "labels": batch["class_labels"][i],
+                'masks': batch['mask_labels'][i].to(torch.bool),
+                'labels': batch['class_labels'][i],
             })
 
         with torch.no_grad():
@@ -63,20 +63,20 @@ def test_with_metrics(model, processor, data_loader, device):
     return results
 
 
-def print_metrics_evaluation(metrics_evaluation, model_name: str = "Model"):
+def print_metrics_evaluation(metrics_evaluation, model_name: str = 'Model'):
     """Helper function to print metrics from torchmetrics."""
-    print(f"\n--- {model_name} Metrics ---")
+    print(f'\n--- {model_name} Metrics ---')
     if not metrics_evaluation:
-        print("No metrics calculated.")
+        print('No metrics calculated.')
         return
 
-    print(f"  mAP:              {metrics_evaluation.get('map', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (IoU=0.50):   {metrics_evaluation.get('map_50', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (IoU=0.75):   {metrics_evaluation.get('map_75', torch.tensor(-1)).item():.4f}")
-    print("-" * 25)
-    print(f"  mAP (small):      {metrics_evaluation.get('map_small', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (medium):     {metrics_evaluation.get('map_medium', torch.tensor(-1)).item():.4f}")
-    print(f"  mAP (large):      {metrics_evaluation.get('map_large', torch.tensor(-1)).item():.4f}")
+    print(f'  mAP:              {metrics_evaluation.get("map", torch.tensor(-1)).item():.4f}')
+    print(f'  mAP (IoU=0.50):   {metrics_evaluation.get("map_50", torch.tensor(-1)).item():.4f}')
+    print(f'  mAP (IoU=0.75):   {metrics_evaluation.get("map_75", torch.tensor(-1)).item():.4f}')
+    print('-' * 25)
+    print(f'  mAP (small):      {metrics_evaluation.get("map_small", torch.tensor(-1)).item():.4f}')
+    print(f'  mAP (medium):     {metrics_evaluation.get("map_medium", torch.tensor(-1)).item():.4f}')
+    print(f'  mAP (large):      {metrics_evaluation.get("map_large", torch.tensor(-1)).item():.4f}')
 
 
 def prepare_metrics_for_json(metrics):
