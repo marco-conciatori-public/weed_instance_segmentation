@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from tqdm import tqdm
 from torchmetrics.detection import MeanAveragePrecision
 
@@ -14,12 +15,49 @@ def test_with_metrics(model, processor, data_loader, device):
         pixel_values = batch['pixel_values'].to(device)
         target_sizes = batch['target_sizes']
 
+        # Construct targets from original maps to ensure precise shape matching
+        # (Processor pads images, so mask_labels are padded. Post-process crops predictions.
+        # Targets need to be unpadded to match predictions.)
         targets = []
+        original_maps = batch['original_maps']
+        id_mappings = batch['id_mappings']
+
         for i in range(len(pixel_values)):
-            targets.append({
-                'masks': batch['mask_labels'][i].to(torch.bool),
-                'labels': batch['class_labels'][i],
-            })
+            gt_map = original_maps[i]
+            mapping = id_mappings[i]
+
+            masks = []
+            labels = []
+
+            # Reconstruct binary masks from the instance map
+            unique_ids = np.unique(gt_map)
+            for uid in unique_ids:
+                # Skip 255 (background)
+                if uid == 255:
+                    continue
+
+                # Safety check
+                if uid not in mapping:
+                    continue
+
+                # Create binary mask for this instance
+                bin_mask = torch.from_numpy((gt_map == uid)).bool()
+                class_id = mapping[uid]
+
+                masks.append(bin_mask)
+                labels.append(class_id)
+
+            if len(masks) > 0:
+                targets.append({
+                    'masks': torch.stack(masks).to('cpu'),
+                    'labels': torch.tensor(labels).to('cpu')
+                })
+            else:
+                # Handle images with no valid objects
+                targets.append({
+                    'masks': torch.zeros((0, *gt_map.shape), dtype=torch.bool),
+                    'labels': torch.tensor([], dtype=torch.long)
+                })
 
         with torch.no_grad():
             outputs = model(pixel_values=pixel_values)

@@ -51,7 +51,8 @@ class WeedDataset(Dataset):
 
         target_size = (height, width)
 
-        instance_map = np.zeros((height, width), dtype=np.int32)
+        # Initialize with 255 (ignore_index)
+        instance_map = np.full((height, width), 255, dtype=np.int32)
         instance_id_to_semantic_id = {}
 
         regions = entry.get('regions', [])
@@ -69,6 +70,10 @@ class WeedDataset(Dataset):
                 continue
             class_id = LABEL2ID[class_name]
 
+            # don't accidentally use 255 as an instance ID
+            if current_instance_id == 255:
+                current_instance_id += 1
+
             all_x = [int(x * scale_factor) for x in shape_attr['all_points_x']]
             all_y = [int(y * scale_factor) for y in shape_attr['all_points_y']]
             points = np.array(list(zip(all_x, all_y)), dtype=np.int32)
@@ -83,14 +88,16 @@ class WeedDataset(Dataset):
             segmentation_maps=[instance_map],
             instance_id_to_semantic_id=instance_id_to_semantic_id,
             return_tensors='pt',
-            ignore_index=0
+            ignore_index=255  # Standard ignore index
         )
 
         return {
             'pixel_values': inputs['pixel_values'][0],
             'mask_labels': inputs['mask_labels'][0],
             'class_labels': inputs['class_labels'][0],
-            'target_size': target_size
+            'target_size': target_size,
+            'original_map': instance_map,  # Return raw map for accurate evaluation
+            'id_to_semantic': instance_id_to_semantic_id
         }
 
 
@@ -100,9 +107,15 @@ def collate_fn(batch):
     class_labels = [item['class_labels'] for item in batch]
     target_sizes = [item['target_size'] for item in batch]
 
+    # Collect new fields for evaluation
+    original_maps = [item['original_map'] for item in batch]
+    id_mappings = [item['id_to_semantic'] for item in batch]
+
     return {
         'pixel_values': pixel_values,
         'mask_labels': mask_labels,
         'class_labels': class_labels,
-        'target_sizes': target_sizes
+        'target_sizes': target_sizes,
+        'original_maps': original_maps,
+        'id_mappings': id_mappings
     }
