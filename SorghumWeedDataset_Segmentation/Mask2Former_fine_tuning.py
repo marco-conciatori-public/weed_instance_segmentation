@@ -18,6 +18,8 @@ from evaluation_utils import (
     print_metrics_evaluation,
     prepare_metrics_for_json
 )
+# Import the function to create preprocessed data
+from prepare_dataset import process_and_save
 
 # Suppress specific warning about unused arguments in preprocessor config
 # This occurs because the checkpoint config has keys not used by the current processor version
@@ -72,18 +74,25 @@ def train(output_dir, metadata: dict) -> dict:
     processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
 
     # 2. Datasets & Loaders
-    # Check if processed data exists
     train_processed_path = os.path.join(PROCESSED_DIR, 'Train')
     val_processed_path = os.path.join(PROCESSED_DIR, 'Validate')
 
-    if os.path.exists(train_processed_path) and len(os.listdir(train_processed_path)) > 0:
-        print(f"Using Pre-processed datasets from: {PROCESSED_DIR}")
-        train_dataset = PreprocessedWeedDataset(train_processed_path)
-        val_dataset = PreprocessedWeedDataset(val_processed_path)
-    else:
-        print("Using Raw images (On-the-fly processing)")
-        train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
-        val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
+    # --- Ensure Train Data is Processed ---
+    if not os.path.exists(train_processed_path) or len(os.listdir(train_processed_path)) == 0:
+        print("Pre-processed Train data not found. Processing now...")
+        raw_train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
+        process_and_save(raw_train_dataset, 'Train')
+
+    # --- Ensure Validation Data is Processed ---
+    if not os.path.exists(val_processed_path) or len(os.listdir(val_processed_path)) == 0:
+        print("Pre-processed Validation data not found. Processing now...")
+        raw_val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
+        process_and_save(raw_val_dataset, 'Validate')
+
+    # Load Pre-processed datasets (Always use these now)
+    print(f"Using Pre-processed datasets from: {PROCESSED_DIR}")
+    train_dataset = PreprocessedWeedDataset(train_processed_path)
+    val_dataset = PreprocessedWeedDataset(val_processed_path)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
@@ -222,13 +231,17 @@ def main():
     processor = AutoImageProcessor.from_pretrained(final_model_path, use_fast=False)
 
     # Create test dataset and loader
-    # check for processed data here too
     test_processed_path = os.path.join(PROCESSED_DIR, 'Test')
-    if os.path.exists(test_processed_path) and len(os.listdir(test_processed_path)) > 0:
-        print(f"Using Pre-processed Test data from: {test_processed_path}")
-        test_dataset = PreprocessedWeedDataset(test_processed_path)
-    else:
-        test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+
+    # --- Ensure Test Data is Processed ---
+    if not os.path.exists(test_processed_path) or len(os.listdir(test_processed_path)) == 0:
+        print("Pre-processed Test data not found. Processing now...")
+        raw_test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+        process_and_save(raw_test_dataset, 'Test')
+
+    # Use Pre-processed Test data
+    print(f"Using Pre-processed Test data from: {test_processed_path}")
+    test_dataset = PreprocessedWeedDataset(test_processed_path)
 
     if len(test_dataset) == 0:
         print('No test data found. Skipping testing.')
