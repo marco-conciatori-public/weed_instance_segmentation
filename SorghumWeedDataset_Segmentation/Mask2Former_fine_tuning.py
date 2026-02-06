@@ -9,9 +9,10 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 from config import (
     TRAIN_IMG_DIR, TRAIN_JSON, VAL_IMG_DIR, VAL_JSON, TEST_IMG_DIR, TEST_JSON,
     OUTPUT_DIR, MODEL_CHECKPOINT, BATCH_SIZE, LEARNING_RATE, EPOCHS,
-    GRADIENT_ACCUMULATION, MAX_INPUT_DIM, MAX_IMAGES, ID2LABEL, LABEL2ID
+    GRADIENT_ACCUMULATION, MAX_INPUT_DIM, MAX_IMAGES, ID2LABEL, LABEL2ID,
+    PROCESSED_DIR
 )
-from data_utils import WeedDataset, collate_fn
+from data_utils import WeedDataset, PreprocessedWeedDataset, collate_fn
 from evaluation_utils import (
     test_with_metrics,
     print_metrics_evaluation,
@@ -27,7 +28,7 @@ warnings.filterwarnings(
 )
 
 
-def evaluate(model, data_loader, device, desc: str = 'Evaluating'):
+def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:
     """Evaluates the model on a given dataset and returns the average loss."""
     model.eval()
     total_loss = 0
@@ -58,7 +59,7 @@ def evaluate(model, data_loader, device, desc: str = 'Evaluating'):
     return avg_loss
 
 
-def train(output_dir, metadata: dict):
+def train(output_dir, metadata: dict) -> dict:
     train_start_time = datetime.now()
     metadata['training'] = {
         'start_time': train_start_time.isoformat()
@@ -71,13 +72,24 @@ def train(output_dir, metadata: dict):
     processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
 
     # 2. Datasets & Loaders
-    train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
-    val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
+    # Check if processed data exists
+    train_processed_path = os.path.join(PROCESSED_DIR, 'Train')
+    val_processed_path = os.path.join(PROCESSED_DIR, 'Validate')
+
+    if os.path.exists(train_processed_path) and len(os.listdir(train_processed_path)) > 0:
+        print(f"Using Pre-processed datasets from: {PROCESSED_DIR}")
+        train_dataset = PreprocessedWeedDataset(train_processed_path)
+        val_dataset = PreprocessedWeedDataset(val_processed_path)
+    else:
+        print("Using Raw images (On-the-fly processing)")
+        train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
+        val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
+
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     # 3. Initialize Model
-    # ignore_mismatched_sizes=True because it is replacing the 80-class COCO head with our 3-class head.
+    # ignore_mismatched_sizes=True because it is replacing the 80-class COCO head with our 3-class head
     model = Mask2FormerForUniversalSegmentation.from_pretrained(
         MODEL_CHECKPOINT,
         id2label=ID2LABEL,
@@ -106,7 +118,6 @@ def train(output_dir, metadata: dict):
             class_labels = [labels.to(device) for labels in batch['class_labels']]
 
             # Forward Pass
-            # The model automatically computes loss if labels are provided
             outputs = model(
                 pixel_values=pixel_values,
                 mask_labels=mask_labels,
@@ -211,7 +222,14 @@ def main():
     processor = AutoImageProcessor.from_pretrained(final_model_path, use_fast=False)
 
     # Create test dataset and loader
-    test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+    # check for processed data here too
+    test_processed_path = os.path.join(PROCESSED_DIR, 'Test')
+    if os.path.exists(test_processed_path) and len(os.listdir(test_processed_path)) > 0:
+        print(f"Using Pre-processed Test data from: {test_processed_path}")
+        test_dataset = PreprocessedWeedDataset(test_processed_path)
+    else:
+        test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+
     if len(test_dataset) == 0:
         print('No test data found. Skipping testing.')
         return

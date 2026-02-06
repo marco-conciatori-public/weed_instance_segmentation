@@ -1,5 +1,6 @@
 import os
 import cv2
+import glob
 import json
 import torch
 import numpy as np
@@ -97,8 +98,38 @@ class WeedDataset(Dataset):
             'class_labels': inputs['class_labels'][0],
             'target_size': target_size,
             'original_map': instance_map,  # Return raw map for accurate evaluation
-            'id_to_semantic': instance_id_to_semantic_id
+            'id_to_semantic': instance_id_to_semantic_id,
+            'file_name': entry['filename']  # Added for caching reference
         }
+
+
+class PreprocessedWeedDataset(Dataset):
+    """
+    Loads pre-processed .pt files from disk. Much faster than processing images on the fly.
+    """
+
+    def __init__(self, processed_dir: str):
+        self.processed_dir = processed_dir
+
+        # Find all .pt files in the directory
+        self.files = glob.glob(os.path.join(processed_dir, "*.pt"))
+
+        # Sort to ensure consistent order
+        self.files.sort()
+
+        if len(self.files) == 0:
+            print(f"WARNING: No .pt files found in {processed_dir}. Did you run prepare_dataset.py?")
+        else:
+            print(f"Loaded {len(self.files)} pre-processed samples from {processed_dir}")
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        file_path = self.files[idx]
+        # Load the dictionary directly from the .pt file
+        data = torch.load(file_path)
+        return data
 
 
 def collate_fn(batch):
