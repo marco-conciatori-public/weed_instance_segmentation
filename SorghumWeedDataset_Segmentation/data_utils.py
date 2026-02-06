@@ -128,7 +128,7 @@ class PreprocessedWeedDataset(Dataset):
     def __getitem__(self, idx):
         file_path = self.files[idx]
         # Load the dictionary directly from the .pt file
-        data = torch.load(file_path)
+        data = torch.load(file_path, weights_only=False)
         return data
 
 
