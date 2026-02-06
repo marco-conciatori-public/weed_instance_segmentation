@@ -3,7 +3,7 @@ import numpy as np
 from torchmetrics.detection import MeanAveragePrecision
 
 
-def test_with_metrics(model, processor, data_loader, device):
+def test_with_metrics(model, processor, data_loader, device) -> dict:
     """
     Evaluates the model on the test set using detailed metrics (mAP).
     """
@@ -104,7 +104,7 @@ def test_with_metrics(model, processor, data_loader, device):
     return results
 
 
-def print_metrics_evaluation(metrics_evaluation, model_name: str = 'Model'):
+def print_metrics_evaluation(metrics_evaluation: dict, model_name: str = 'Model') -> None:
     """Helper function to print metrics from torchmetrics."""
     print(f'\n--- {model_name} Metrics ---')
     if not metrics_evaluation:
@@ -114,7 +114,7 @@ def print_metrics_evaluation(metrics_evaluation, model_name: str = 'Model'):
     # Helper to safely get scalar item
     def get_scalar(key):
         val = metrics_evaluation.get(key, torch.tensor(-1))
-        # Ensure we only call .item() on scalars
+        # only call .item() on scalars
         return val.item() if val.numel() == 1 else -1
 
     print(f'  mAP:              {get_scalar("map"):.4f}')
@@ -126,7 +126,7 @@ def print_metrics_evaluation(metrics_evaluation, model_name: str = 'Model'):
     print(f'  mAP (large):      {get_scalar("map_large"):.4f}')
 
 
-def prepare_metrics_for_json(metrics):
+def prepare_metrics_for_json(metrics) -> dict | None:
     """Converts tensors in metrics dict to floats/lists for JSON serialization."""
     if not metrics:
         return None

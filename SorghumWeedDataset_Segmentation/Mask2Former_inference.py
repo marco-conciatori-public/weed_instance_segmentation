@@ -23,14 +23,14 @@ def load_model():
     model = Mask2FormerForUniversalSegmentation.from_pretrained(model_id_or_path)
 
     # Use GPU if available
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model.to(device)
-    print(f'Model loaded on {device.upper()}')
+    device_name = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model.to(device_name)
+    print(f'Model loaded on {device_name.upper()}')
 
-    return model, processor, device
+    return model, processor, device_name
 
 
-def run_inference(image_path: str, model, processor, device: str):
+def run_inference(image_path: str, model, processor, device_name: str):
     """
     Runs inference on a single image.
     """
@@ -41,7 +41,7 @@ def run_inference(image_path: str, model, processor, device: str):
 
     # Preprocess
     inputs = processor(images=image, return_tensors='pt')
-    inputs = {k: v.to(device) for k, v in inputs.items()}
+    inputs = {k: v.to(device_name) for k, v in inputs.items()}
 
     # Inference
     with torch.no_grad():
@@ -150,7 +150,7 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
 
 if __name__ == '__main__':
     # Load Model
-    model, processor, device = load_model()
+    model, processor, device_name = load_model()
 
     # Run Pipeline
     DATA_FOLDER_PATH = '../data/'
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         image_path=DATA_FOLDER_PATH + IMAGE_NAME,
         model=model,
         processor=processor,
-        device=device,
+        device_name=device_name,
     )
 
     # Show Output

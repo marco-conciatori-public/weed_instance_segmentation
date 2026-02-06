@@ -132,7 +132,7 @@ class PreprocessedWeedDataset(Dataset):
         return data
 
 
-def collate_fn(batch):
+def collate_fn(batch) -> dict:
     pixel_values = torch.stack([item['pixel_values'] for item in batch])
     mask_labels = [item['mask_labels'] for item in batch]
     class_labels = [item['class_labels'] for item in batch]

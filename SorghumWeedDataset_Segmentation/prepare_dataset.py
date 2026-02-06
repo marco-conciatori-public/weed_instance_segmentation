@@ -2,17 +2,14 @@ import os
 import torch
 from transformers import AutoImageProcessor
 
+from data_utils import WeedDataset
 from config import (
     TRAIN_IMG_DIR, TRAIN_JSON, VAL_IMG_DIR, VAL_JSON, TEST_IMG_DIR, TEST_JSON,
-    MODEL_CHECKPOINT, PROCESSED_DIR, MAX_IMAGES
+    MODEL_CHECKPOINT, PROCESSED_DIR
 )
-from data_utils import WeedDataset
 
 
-# Override MAX_IMAGES to ensure we process everything, unless specifically debugging
-# MAX_IMAGES = None  # Uncomment this to force full processing regardless of config.py
-
-def process_and_save(dataset, dataset_name: str):
+def process_and_save(dataset, dataset_name: str) -> None:
     """
     Iterates through the dataset and saves each item as a .pt file.
     """
