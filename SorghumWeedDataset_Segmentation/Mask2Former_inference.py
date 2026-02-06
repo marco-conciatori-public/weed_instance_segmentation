@@ -24,7 +24,8 @@ def load_model():
     model = Mask2FormerForUniversalSegmentation.from_pretrained(model_id_or_path)
 
     # Use GPU if available
-    device_name = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # device_name = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device_name = 'cpu'
     model.to(device_name)
     print(f'Model loaded on {device_name.upper()}')
 
