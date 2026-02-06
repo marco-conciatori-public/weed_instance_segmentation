@@ -1,11 +1,11 @@
 import os
 import torch
 import warnings
-import argparse
+# import argparse
 from torch.utils.data import DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
-from config import TEST_IMG_DIR, TEST_JSON, BATCH_SIZE
+import config
 from data_utils import WeedDataset, collate_fn
 from evaluation_utils import test_with_metrics, print_metrics_evaluation
 
@@ -41,11 +41,11 @@ def main(args):
     processor = AutoImageProcessor.from_pretrained(processor_path, use_fast=False)
 
     print('\nLoading test dataset...')
-    test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+    test_dataset = WeedDataset(config.TEST_IMG_DIR, config.TEST_JSON, processor)
     if len(test_dataset) == 0:
         print('No test data found. Skipping testing.')
         return
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     if os.path.exists(final_model_path):
         print(f'\nTesting final model from: {final_model_path}')

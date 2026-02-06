@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 
-from config import MAX_IMAGES, MAX_INPUT_DIM, LABEL2ID
+import config
 
 
 class WeedDataset(Dataset):
@@ -27,7 +27,7 @@ class WeedDataset(Dataset):
             if os.path.exists(img_path) and len(entry.get('regions', [])) > 0:
                 self.valid_entries.append(entry)
                 valid_image_count += 1
-                if (MAX_IMAGES is not None) and (valid_image_count >= MAX_IMAGES):
+                if (config.MAX_IMAGES is not None) and (valid_image_count >= config.MAX_IMAGES):
                     break
 
         print(f'Loaded {len(self.valid_entries)} valid images from {annotation_file_path}')
@@ -43,8 +43,8 @@ class WeedDataset(Dataset):
         width, height = image.size
 
         scale_factor = 1.0
-        if max(width, height) > MAX_INPUT_DIM:
-            scale_factor = MAX_INPUT_DIM / max(width, height)
+        if max(width, height) > config.MAX_INPUT_DIM:
+            scale_factor = config.MAX_INPUT_DIM / max(width, height)
             new_width = int(width * scale_factor)
             new_height = int(height * scale_factor)
             image = image.resize((new_width, new_height), resample=Image.BILINEAR)
@@ -67,9 +67,9 @@ class WeedDataset(Dataset):
                 continue
 
             class_name = region_attr.get('classname', None)
-            if class_name not in LABEL2ID:
+            if class_name not in config.LABEL2ID:
                 continue
-            class_id = LABEL2ID[class_name]
+            class_id = config.LABEL2ID[class_name]
 
             # don't accidentally use 255 as an instance ID
             if current_instance_id == 255:

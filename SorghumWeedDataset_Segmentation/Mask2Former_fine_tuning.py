@@ -6,12 +6,7 @@ from datetime import datetime
 from torch.utils.data import DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
-from config import (
-    TRAIN_IMG_DIR, TRAIN_JSON, VAL_IMG_DIR, VAL_JSON, TEST_IMG_DIR, TEST_JSON,
-    MODEL_OUTPUT_DIR, MODEL_CHECKPOINT, BATCH_SIZE, LEARNING_RATE, EPOCHS,
-    GRADIENT_ACCUMULATION, MAX_INPUT_DIM, MAX_IMAGES, ID2LABEL, LABEL2ID,
-    PROCESSED_DIR
-)
+import config
 from data_utils import WeedDataset, PreprocessedWeedDataset, collate_fn
 from evaluation_utils import (
     test_with_metrics,
@@ -71,44 +66,44 @@ def train(output_dir, metadata: dict) -> dict:
     print(f'Training on: {device}')
 
     # 1. Initialize Processor
-    processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
+    processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
 
     # 2. Datasets & Loaders
-    train_processed_path = os.path.join(PROCESSED_DIR, 'Train')
-    val_processed_path = os.path.join(PROCESSED_DIR, 'Validate')
+    train_processed_path = os.path.join(config.PROCESSED_DIR, 'Train')
+    val_processed_path = os.path.join(config.PROCESSED_DIR, 'Validate')
 
     # --- Ensure Train Data is Processed ---
     if not os.path.exists(train_processed_path) or len(os.listdir(train_processed_path)) == 0:
         print("Pre-processed Train data not found. Processing now...")
-        raw_train_dataset = WeedDataset(TRAIN_IMG_DIR, TRAIN_JSON, processor)
+        raw_train_dataset = WeedDataset(config.TRAIN_IMG_DIR, config.TRAIN_JSON, processor)
         process_and_save(raw_train_dataset, 'Train')
 
     # --- Ensure Validation Data is Processed ---
     if not os.path.exists(val_processed_path) or len(os.listdir(val_processed_path)) == 0:
         print("Pre-processed Validation data not found. Processing now...")
-        raw_val_dataset = WeedDataset(VAL_IMG_DIR, VAL_JSON, processor)
+        raw_val_dataset = WeedDataset(config.VAL_IMG_DIR, config.VAL_JSON, processor)
         process_and_save(raw_val_dataset, 'Validate')
 
     # Load Pre-processed datasets (Always use these now)
-    print(f"Using Pre-processed datasets from: {PROCESSED_DIR}")
+    print(f"Using Pre-processed datasets from: {config.PROCESSED_DIR}")
     train_dataset = PreprocessedWeedDataset(train_processed_path)
     val_dataset = PreprocessedWeedDataset(val_processed_path)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+    train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     # 3. Initialize Model
     # ignore_mismatched_sizes=True because it is replacing the 80-class COCO head with our 3-class head
     model = Mask2FormerForUniversalSegmentation.from_pretrained(
-        MODEL_CHECKPOINT,
-        id2label=ID2LABEL,
-        label2id=LABEL2ID,
+        config.MODEL_CHECKPOINT,
+        id2label=config.ID2LABEL,
+        label2id=config.LABEL2ID,
         ignore_mismatched_sizes=True
     )
     model.to(device)
 
     # 4. Optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.LEARNING_RATE)
 
     # 5. Training Loop
     model.train()
@@ -116,9 +111,9 @@ def train(output_dir, metadata: dict) -> dict:
 
     print('Starting Training...')
 
-    for epoch in range(EPOCHS):
+    for epoch in range(config.EPOCHS):
         total_loss = 0
-        print(f'\nEpoch {epoch + 1}/{EPOCHS}')
+        print(f'\nEpoch {epoch + 1}/{config.EPOCHS}')
 
         for step, batch in enumerate(train_loader):
             # Move batch to device
@@ -136,14 +131,14 @@ def train(output_dir, metadata: dict) -> dict:
             loss = outputs.loss
 
             # Normalize loss for gradient accumulation
-            loss = loss / GRADIENT_ACCUMULATION
+            loss = loss / config.GRADIENT_ACCUMULATION
             loss.backward()
 
-            if (step + 1) % GRADIENT_ACCUMULATION == 0:
+            if (step + 1) % config.GRADIENT_ACCUMULATION == 0:
                 optimizer.step()
                 optimizer.zero_grad()
 
-            current_loss = loss.item() * GRADIENT_ACCUMULATION
+            current_loss = loss.item() * config.GRADIENT_ACCUMULATION
             total_loss += current_loss
 
             # Print progress every step or every few steps
@@ -185,7 +180,7 @@ def main():
     # Create a unique output directory for this run based on the current time
     run_start_time = datetime.now()
     run_timestamp = run_start_time.strftime('%Y-%m-%d_%H-%M-%S/')
-    run_output_dir = os.path.join(MODEL_OUTPUT_DIR, run_timestamp)
+    run_output_dir = os.path.join(config.MODEL_OUTPUT_DIR, run_timestamp)
     print(f'Results for this run will be saved in: {run_output_dir}')
     os.makedirs(run_output_dir, exist_ok=True)
 
@@ -193,18 +188,18 @@ def main():
         'run_id': run_timestamp,
         'run_start_time': run_start_time.isoformat(),
         'model_config': {
-            'base_checkpoint': MODEL_CHECKPOINT,
-            'learning_rate': LEARNING_RATE,
-            'batch_size': BATCH_SIZE,
-            'epochs': EPOCHS,
-            'gradient_accumulation': GRADIENT_ACCUMULATION,
-            'max_input_dim': MAX_INPUT_DIM,
+            'base_checkpoint': config.MODEL_CHECKPOINT,
+            'learning_rate': config.LEARNING_RATE,
+            'batch_size': config.BATCH_SIZE,
+            'epochs': config.EPOCHS,
+            'gradient_accumulation': config.GRADIENT_ACCUMULATION,
+            'max_input_dim': config.MAX_INPUT_DIM,
         },
         'dataset_config': {
-            'train_annotations': TRAIN_JSON,
-            'validation_annotations': VAL_JSON,
-            'test_annotations': TEST_JSON,
-            'max_images_per_split': MAX_IMAGES,
+            'train_annotations': config.TRAIN_JSON,
+            'validation_annotations': config.VAL_JSON,
+            'test_annotations': config.TEST_JSON,
+            'max_images_per_split': config.MAX_IMAGES,
         },
         'training': {},
         'testing': {}
@@ -231,12 +226,12 @@ def main():
     processor = AutoImageProcessor.from_pretrained(final_model_path, use_fast=False)
 
     # Create test dataset and loader
-    test_processed_path = os.path.join(PROCESSED_DIR, 'Test')
+    test_processed_path = os.path.join(config.PROCESSED_DIR, 'Test')
 
     # --- Ensure Test Data is Processed ---
     if not os.path.exists(test_processed_path) or len(os.listdir(test_processed_path)) == 0:
         print("Pre-processed Test data not found. Processing now...")
-        raw_test_dataset = WeedDataset(TEST_IMG_DIR, TEST_JSON, processor)
+        raw_test_dataset = WeedDataset(config.TEST_IMG_DIR, config.TEST_JSON, processor)
         process_and_save(raw_test_dataset, 'Test')
 
     # Use Pre-processed Test data
@@ -247,7 +242,7 @@ def main():
         print('No test data found. Skipping testing.')
         return
 
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     # Test the final_model
     print(f'\nTesting final model from: {final_model_path}')

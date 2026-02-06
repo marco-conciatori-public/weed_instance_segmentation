@@ -2,18 +2,15 @@ import os
 import torch
 from transformers import AutoImageProcessor
 
+import config
 from data_utils import WeedDataset
-from config import (
-    TRAIN_IMG_DIR, TRAIN_JSON, VAL_IMG_DIR, VAL_JSON, TEST_IMG_DIR, TEST_JSON,
-    MODEL_CHECKPOINT, PROCESSED_DIR
-)
 
 
 def process_and_save(dataset, dataset_name: str) -> None:
     """
     Iterates through the dataset and saves each item as a .pt file.
     """
-    output_dir = os.path.join(PROCESSED_DIR, dataset_name)
+    output_dir = os.path.join(config.PROCESSED_DIR, dataset_name)
     os.makedirs(output_dir, exist_ok=True)
 
     print(f'\nProcessing {dataset_name} set...')
@@ -41,22 +38,34 @@ def main():
     print('--- Starting Dataset Preparation ---')
 
     # Initialize Processor
-    processor = AutoImageProcessor.from_pretrained(MODEL_CHECKPOINT, use_fast=False)
+    processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
 
     # 1. Train Split
-    train_dataset = WeedDataset(image_folder_path=TRAIN_IMG_DIR, annotation_file_path=TRAIN_JSON, processor=processor)
+    train_dataset = WeedDataset(
+        image_folder_path=config.TRAIN_IMG_DIR,
+        annotation_file_path=config.TRAIN_JSON,
+        processor=processor,
+    )
     process_and_save(dataset=train_dataset, dataset_name='Train')
 
     # 2. Validation Split
-    val_dataset = WeedDataset(image_folder_path=VAL_IMG_DIR, annotation_file_path=VAL_JSON, processor=processor)
+    val_dataset = WeedDataset(
+        image_folder_path=config.VAL_IMG_DIR,
+        annotation_file_path=config.VAL_JSON,
+        processor=processor,
+    )
     process_and_save(dataset=val_dataset, dataset_name='Validate')
 
     # 3. Test Split
-    test_dataset = WeedDataset(image_folder_path=TEST_IMG_DIR, annotation_file_path=TEST_JSON, processor=processor)
+    test_dataset = WeedDataset(
+        image_folder_path=config.TEST_IMG_DIR,
+        annotation_file_path=config.TEST_JSON,
+        processor=processor,
+    )
     process_and_save(dataset=test_dataset, dataset_name='Test')
 
     print('\n--- Processing Complete ---')
-    print(f'Data saved in: {PROCESSED_DIR}')
+    print(f'Data saved in: {config.PROCESSED_DIR}')
 
 
 if __name__ == '__main__':
