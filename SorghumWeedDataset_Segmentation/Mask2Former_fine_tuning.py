@@ -184,7 +184,7 @@ def train(output_dir, metadata: dict) -> dict:
 def main():
     # Create a unique output directory for this run based on the current time
     run_start_time = datetime.now()
-    run_timestamp = run_start_time.strftime('%Y-%m-%d_%H-%M-%S')
+    run_timestamp = run_start_time.strftime('%Y-%m-%d_%H-%M-%S/')
     run_output_dir = os.path.join(MODEL_OUTPUT_DIR, run_timestamp)
     print(f'Results for this run will be saved in: {run_output_dir}')
     os.makedirs(run_output_dir, exist_ok=True)
