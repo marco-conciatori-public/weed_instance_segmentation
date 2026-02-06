@@ -1,4 +1,5 @@
 import torch
+import config
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -36,6 +37,12 @@ def run_inference(image_path: str, model, processor, device_name: str):
     """
     # Load Image
     image = Image.open(image_path)
+    width, height = image.size
+    if max(width, height) > config.MAX_INPUT_DIM:
+        scale_factor = config.MAX_INPUT_DIM / max(width, height)
+        new_width = int(width * scale_factor)
+        new_height = int(height * scale_factor)
+        image = image.resize((new_width, new_height), resample=Image.BILINEAR)
 
     print(f'Processing image size: {image.size}')
 
