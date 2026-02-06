@@ -48,9 +48,9 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
 
     print(f'Searching for a valid image in "{image_folder}"...')
     for entry in entries:
-        filename = entry['filename']
-        print(f'\tChecking for file: {filename}')
-        image_path = os.path.join(image_folder, filename)
+        file_name = entry['filename']
+        print(f'\tChecking for file: {file_name}')
+        image_path = os.path.join(image_folder, file_name)
 
         if not os.path.exists(image_path):
             continue
