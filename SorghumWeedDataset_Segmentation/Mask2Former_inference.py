@@ -11,9 +11,9 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 SHOW_GROUND_TRUTH = True
 INSTANCE_MODE = False
+MODEL_ID_OR_PATH = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/best_model'
 # IMAGE_NAME = 'TestSorghumWeed (7).JPG'
 IMAGE_NAME = 'TestSorghumWeed (14).JPG'
-MODEL_ID_OR_PATH = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/best_model'
 
 
 def load_model(model_id_or_path: str):
