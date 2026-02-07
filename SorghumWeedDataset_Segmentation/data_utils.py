@@ -132,15 +132,14 @@ class PreprocessedWeedDataset(Dataset):
         return data
 
 
-def collate_fn(batch) -> dict:
+def collate_fn(batch, keep_file_names: bool = False) -> dict:
     pixel_values = torch.stack([item['pixel_values'] for item in batch])
     mask_labels = [item['mask_labels'] for item in batch]
     class_labels = [item['class_labels'] for item in batch]
     target_sizes = [item['target_size'] for item in batch]
-
-    # Collect new fields for evaluation
     original_maps = [item['original_map'] for item in batch]
     id_mappings = [item['id_to_semantic'] for item in batch]
+    file_names = [item['file_name'] for item in batch]
 
     return {
         'pixel_values': pixel_values,
@@ -148,5 +147,6 @@ def collate_fn(batch) -> dict:
         'class_labels': class_labels,
         'target_sizes': target_sizes,
         'original_maps': original_maps,
-        'id_mappings': id_mappings
+        'id_mappings': id_mappings,
+        'file_names': file_names,
     }
