@@ -1,3 +1,6 @@
+import os
+import cv2
+import json
 import torch
 import config
 import numpy as np
@@ -6,26 +9,31 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
+SHOW_GROUND_TRUTH = True
+# IMAGE_NAME = 'TestSorghumWeed (7).JPG'
+IMAGE_NAME = 'TestSorghumWeed (14).JPG'
+
 
 def load_model():
     """
-    Loads the Mask2Former model and processor
-    with the Swin-Large backbone for maximum accuracy
+    Loads the Mask2Former model and processor.
     """
 
-    # 'facebook/mask2former-swin-large-coco-instance' is the high-accuracy
-    # checkpoint fine-tuned for instance segmentation.
-    # model_id_or_path = 'facebook/mask2former-swin-large-coco-instance'
+    # Checkpoint paths
     model_id_or_path = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/best_model'
-    # model_id_or_path = 'models/mask2former_fine_tuned/2026-02-04_20-56-07/final_model'
+
+    # Fallback to config if local path doesn't exist
+    if not os.path.exists(model_id_or_path):
+        print(f"Path '{model_id_or_path}' not found. Falling back to config default.")
+        model_id_or_path = config.MODEL_CHECKPOINT
+
     print(f'Loading {model_id_or_path}...')
 
     processor = AutoImageProcessor.from_pretrained(model_id_or_path, use_fast=False)
     model = Mask2FormerForUniversalSegmentation.from_pretrained(model_id_or_path)
 
     # Use GPU if available
-    # device_name = 'cuda' if torch.cuda.is_available() else 'cpu'
-    device_name = 'cpu'
+    device_name = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device_name)
     print(f'Model loaded on {device_name.upper()}')
 
@@ -37,7 +45,7 @@ def run_inference(image_path: str, model, processor, device_name: str):
     Runs inference on a single image.
     """
     # Load Image
-    image = Image.open(image_path)
+    image = Image.open(image_path).convert("RGB")
     width, height = image.size
     if max(width, height) > config.MAX_INPUT_DIM:
         scale_factor = config.MAX_INPUT_DIM / max(width, height)
@@ -65,23 +73,108 @@ def run_inference(image_path: str, model, processor, device_name: str):
     return image, result
 
 
-def visualize_result(image, result: dict, model, confidence_threshold: float = 0.5, instance_mode: bool = True) -> None:
+def load_ground_truth(image_name: str, target_size: tuple) -> dict | None:
     """
-    Visualizes the instance segmentation masks overlaid on the image.
+    Loads ground truth annotations from the TEST_JSON file.
+    Constructs a result dictionary compatible with the visualization function.
 
     Args:
-        image: The input image.
-        result: The segmentation result dictionary.
-        model: The model used for inference (needed for label mapping).
-        confidence_threshold: Minimum score to display a segment.
-        instance_mode: If True, assigns a unique color and legend entry to every individual instance (e.g., "Car 1", "Car 2").
-                       If False, assigns colors and legend entries by class (e.g., all "Car" instances are red).
+        image_name: The filename of the image (e.g., '123.jpg').
+        target_size: The (width, height) of the image being displayed/processed.
+                     Used to scale polygon coordinates.
     """
-    segmentation = result['segmentation'].cpu().numpy()
+    json_path = config.TEST_JSON
+
+    if not os.path.exists(json_path):
+        print(f"Ground truth JSON not found at {json_path}")
+        return None
+
+    try:
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"Error loading JSON: {e}")
+        return None
+
+    # Find entry for the specific image
+    entry = next((item for item in data.values() if item['filename'] == image_name), None)
+
+    if not entry:
+        print(f"No annotation found for '{image_name}' in {json_path}")
+        return None
+
+    # Determine scale factor based on original image size vs target size
+    img_path = os.path.join(config.TEST_IMG_DIR, image_name)
+    if os.path.exists(img_path):
+        with Image.open(img_path) as orig_img:
+            orig_w, orig_h = orig_img.size
+    else:
+        # Fallback: assume the JSON coordinates match the target_size if we can't verify
+        print("Warning: Could not find original image file to verify scale. Assuming 1:1 scale with target.")
+        orig_w, orig_h = target_size
+
+    target_w, target_h = target_size
+    scale_x = target_w / orig_w
+    scale_y = target_h / orig_h
+
+    # Create empty mask (H, W)
+    segmentation = np.zeros((target_h, target_w), dtype=np.int32)
+    segments_info = []
+
+    regions = entry.get('regions', [])
+    current_instance_id = 1
+
+    for region in regions:
+        shape_attr = region['shape_attributes']
+        region_attr = region['region_attributes']
+
+        if shape_attr['name'] != 'polygon':
+            continue
+
+        class_name = region_attr.get('classname', None)
+        if class_name not in config.LABEL2ID:
+            continue
+
+        label_id = config.LABEL2ID[class_name]
+
+        # Get points and scale them
+        all_x = shape_attr['all_points_x']
+        all_y = shape_attr['all_points_y']
+
+        scaled_points = []
+        for x, y in zip(all_x, all_y):
+            scaled_points.append([int(x * scale_x), int(y * scale_y)])
+
+        points_np = np.array(scaled_points, dtype=np.int32)
+
+        # Draw filled polygon on mask
+        cv2.fillPoly(segmentation, [points_np], color=current_instance_id)
+
+        # Add info
+        segments_info.append({
+            'id': current_instance_id,
+            'label_id': label_id,
+            'score': 1.0  # Ground truth is always 100% confident
+        })
+
+        current_instance_id += 1
+
+    return {
+        'segmentation': torch.from_numpy(segmentation),
+        'segments_info': segments_info
+    }
+
+
+def plot_segmentation(ax, image, result, model, confidence_threshold, instance_mode, title):
+    """
+    Helper function to plot segmentation on a specific matplotlib axis.
+    """
+    segmentation = result['segmentation']
+    if isinstance(segmentation, torch.Tensor):
+        segmentation = segmentation.cpu().numpy()
+
     segments_info = result['segments_info']
 
-    # Create a figure
-    fig, ax = plt.subplots(figsize=(12, 12))
     ax.imshow(image)
 
     # Create an empty colored mask (RGBA for transparency)
@@ -92,17 +185,15 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
 
     # Track counts for each class label to assign indices
     class_counts = {}
-
-    # Track classes already added to the legend (for instance_mode=False)
     seen_classes_in_legend = set()
 
-    # Filter segments first
-    valid_segments = [s for s in segments_info if s['score'] >= confidence_threshold]
+    # Filter segments
+    valid_segments = [s for s in segments_info if s.get('score', 0) >= confidence_threshold]
     num_instances = len(valid_segments)
 
-    print(f'Found {len(segments_info)} raw instances, {num_instances} passed threshold.')
+    print(f"[{title}] Displaying {num_instances} segments.")
 
-    # --- COLOR GENERATION LOGIC ---
+    # Color Setup
     if instance_mode:
         num_colors_needed = num_instances
     else:
@@ -114,29 +205,30 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
     # Select Colormap based on number of colors needed
     if num_colors_needed <= 20:
         cmap = plt.get_cmap('tab20')
-        color_palette = [cmap(i) for i in range(num_colors_needed)]
+        color_palette = [cmap(i) for i in range(max(num_colors_needed, 1))]
     else:
         cmap = plt.get_cmap('nipy_spectral')
         color_palette = [cmap(i) for i in np.linspace(0, 1, num_colors_needed)]
 
-    # --- MAIN LOOP ---
     for i, segment in enumerate(valid_segments):
         segment_id = segment['id']
         label_id = segment['label_id']
-        label_text = model.config.id2label[label_id]
 
-        # Update count for this class (used for naming in instance_mode)
+        # Safe label lookup
+        if hasattr(model.config, 'id2label') and label_id in model.config.id2label:
+            label_text = model.config.id2label[label_id]
+        else:
+            label_text = config.ID2LABEL.get(label_id, f"Class {label_id}")
+
         count = class_counts.get(label_text, 0) + 1
         class_counts[label_text] = count
 
-        # --- DETERMINE COLOR AND LABEL ---
+        # Determine Color and Label
         if instance_mode:
-            # 1. Instance Mode: Unique color per instance, Label includes count
             rgb = color_palette[i][:3]
             display_label = f"{label_text} {count}"
             should_add_to_legend = True
         else:
-            # 2. Class Mode: Color based on class ID, Label is just class name
             color_idx = class_color_index_map[label_id]
             rgb = color_palette[color_idx][:3]
             display_label = label_text
@@ -148,23 +240,20 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
             else:
                 should_add_to_legend = False
 
-        # --- DRAWING ---
-
-        # 1. High Transparency Cover (Low Alpha)
-        fill_alpha = 0.3
+        # Drawing Logic
+        # 1. Fill
+        fill_alpha = 0.4
         fill_color = np.concatenate([rgb, [fill_alpha]])
 
         # Apply fill color to the mask location
         mask_bool = (segmentation == segment_id)
         color_mask[mask_bool] = fill_color
 
-        # Store contour data
-        # 2. Low Transparency Contour (High Alpha)
-        contour_alpha = 0.9
+        # 2. Contour
+        contour_alpha = 1.0
         contour_color = np.concatenate([rgb, [contour_alpha]])
         contours_to_draw.append((mask_bool, contour_color))
 
-        # Add to legend if criteria met
         if should_add_to_legend:
             patch = mpatches.Patch(color=fill_color, label=display_label)
             legend_patches.append(patch)
@@ -174,16 +263,40 @@ def visualize_result(image, result: dict, model, confidence_threshold: float = 0
 
     # Draw contours on top of the fills
     for mask, color in contours_to_draw:
-        ax.contour(mask, levels=[0.5], colors=[color], linewidths=2)
+        try:
+            ax.contour(mask, levels=[0.5], colors=[color], linewidths=2)
+        except Exception:
+            # Handles cases where mask might be empty or singular
+            pass
 
     ax.axis('off')
+    if legend_patches:
+        ax.legend(handles=legend_patches, loc='upper right', framealpha=0.8)
 
-    # Add a legend to the plot
-    plt.legend(handles=legend_patches, loc='upper right', bbox_to_anchor=(1.25, 1))
+    ax.set_title(title, fontsize=16)
 
-    # Update title based on mode
-    mode_str = "Instance" if instance_mode else "Class"
-    plt.title(f'Mask2Former (Swin-L) {mode_str} Segmentation', fontsize=16)
+
+def visualize_result(image,
+                     result: dict,
+                     model,
+                     ground_truth_result: dict = None,
+                     confidence_threshold: float = 0.5,
+                     instance_mode: bool = True,
+                     ) -> None:
+    """
+    Visualizes the instance segmentation masks.
+    If ground_truth_result is provided, plots side-by-side.
+    """
+
+    if ground_truth_result:
+        fig, axes = plt.subplots(1, 2, figsize=(24, 12))
+        plot_segmentation(axes[0], image, result, model, confidence_threshold, instance_mode, "Model Prediction")
+        plot_segmentation(axes[1], image, ground_truth_result, model, confidence_threshold, instance_mode,
+                          "Ground Truth")
+    else:
+        fig, ax = plt.subplots(figsize=(12, 12))
+        plot_segmentation(ax, image, result, model, confidence_threshold, instance_mode,
+                          f"Prediction ({'Instance' if instance_mode else 'Class'})")
 
     plt.tight_layout()
     plt.show()
@@ -193,18 +306,31 @@ if __name__ == '__main__':
     # Load Model
     model, processor, device_name = load_model()
 
-    # Run Pipeline
-    DATA_FOLDER_PATH = '../data/'
-    # IMAGE_NAME = '20230607_095156.jpg'
-    # IMAGE_NAME = 'IMG_20230505_164625.jpg'
-    IMAGE_NAME = 'TestSorghumWeed (7).JPG'
-    # IMAGE_NAME = 'TestSorghumWeed (14).JPG'
-    image, result = run_inference(
-        image_path=DATA_FOLDER_PATH + IMAGE_NAME,
-        model=model,
-        processor=processor,
-        device_name=device_name,
-    )
+    # Image Setup
+    DATA_FOLDER_PATH = config.TEST_IMG_DIR
+    image_full_path = os.path.join(DATA_FOLDER_PATH, IMAGE_NAME)
 
-    # Show Output
-    visualize_result(image=image, result=result, model=model, instance_mode=False)
+    if not os.path.exists(image_full_path):
+        print(f"Image not found at {image_full_path}. Please check path.")
+    else:
+        image, result = run_inference(
+            image_path=image_full_path,
+            model=model,
+            processor=processor,
+            device_name=device_name,
+        )
+
+        # Handle Ground Truth
+        gt_result = None
+        if SHOW_GROUND_TRUTH:
+            print(f"Attempting to load ground truth for {IMAGE_NAME}...")
+            gt_result = load_ground_truth(IMAGE_NAME, image.size)
+
+        # Show Output
+        visualize_result(
+            image=image,
+            result=result,
+            model=model,
+            ground_truth_result=gt_result,
+            instance_mode=False
+        )
