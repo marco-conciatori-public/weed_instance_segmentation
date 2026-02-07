@@ -20,7 +20,7 @@ warnings.filterwarnings(
 def main(args):
     """Main function to run the testing."""
     # run_dir = args.model_run_dir
-    run_dir = 'models/mask2former_fine_tuned/2026-02-04_21-46-40/'
+    run_dir = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/'
     if not os.path.isdir(run_dir):
         print(f'Error: Directory not found at "{run_dir}"')
         return
