@@ -11,7 +11,7 @@ import config
 
 
 class WeedDataset(Dataset):
-    def __init__(self, image_folder_path: str, annotation_file_path: str, processor):
+    def __init__(self, image_folder_path, annotation_file_path, processor):
         self.image_folder = image_folder_path
         self.processor = processor
 

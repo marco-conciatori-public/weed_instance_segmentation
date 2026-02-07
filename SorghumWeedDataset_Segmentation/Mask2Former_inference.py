@@ -16,7 +16,7 @@ MODEL_ID_OR_PATH = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/best_model
 IMAGE_NAME = 'TestSorghumWeed (14).JPG'
 
 
-def load_model(model_id_or_path: str):
+def load_model(model_id_or_path):
     """
     Loads the Mask2Former model and processor.
     """
@@ -39,7 +39,7 @@ def load_model(model_id_or_path: str):
     return model, processor, device_name
 
 
-def run_inference(image_path: str, model, processor, device_name: str):
+def run_inference(image_path, model, processor, device_name: str):
     """
     Runs inference on a single image.
     """
@@ -108,7 +108,7 @@ def load_ground_truth(image_name: str, target_size: tuple) -> dict | None:
         with Image.open(img_path) as orig_img:
             orig_w, orig_h = orig_img.size
     else:
-        # Fallback: assume the JSON coordinates match the target_size if we can't verify
+        # Fallback: assume the JSON coordinates match the target_size
         print("Warning: Could not find original image file to verify scale. Assuming 1:1 scale with target.")
         orig_w, orig_h = target_size
 
@@ -239,7 +239,7 @@ def plot_segmentation(ax,
             rgb = color_palette[color_idx][:3]
             display_label = label_text
 
-            # Only add to legend if we haven't seen this class yet
+            # Only add to legend if unseen class
             if label_id not in seen_classes_in_legend:
                 should_add_to_legend = True
                 seen_classes_in_legend.add(label_id)
