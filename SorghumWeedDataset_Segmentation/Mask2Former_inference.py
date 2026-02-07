@@ -10,6 +10,7 @@ import matplotlib.patches as mpatches
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 SHOW_GROUND_TRUTH = True
+INSTANCE_MODE = False
 # IMAGE_NAME = 'TestSorghumWeed (7).JPG'
 IMAGE_NAME = 'TestSorghumWeed (14).JPG'
 
@@ -353,5 +354,5 @@ if __name__ == '__main__':
             result=result,
             model=model,
             ground_truth_result=gt_result,
-            instance_mode=False
+            instance_mode=INSTANCE_MODE
         )
