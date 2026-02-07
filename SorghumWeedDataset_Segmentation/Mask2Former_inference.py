@@ -13,15 +13,13 @@ SHOW_GROUND_TRUTH = True
 INSTANCE_MODE = False
 # IMAGE_NAME = 'TestSorghumWeed (7).JPG'
 IMAGE_NAME = 'TestSorghumWeed (14).JPG'
+MODEL_ID_OR_PATH = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/best_model'
 
 
-def load_model():
+def load_model(model_id_or_path: str):
     """
     Loads the Mask2Former model and processor.
     """
-
-    # Checkpoint paths
-    model_id_or_path = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/best_model'
 
     # Fallback to config if local path doesn't exist
     if not os.path.exists(model_id_or_path):
@@ -326,7 +324,7 @@ def visualize_result(image,
 
 if __name__ == '__main__':
     # Load Model
-    model, processor, device_name = load_model()
+    model, processor, device_name = load_model(MODEL_ID_OR_PATH)
 
     # Image Setup
     DATA_FOLDER_PATH = config.TEST_IMG_DIR
