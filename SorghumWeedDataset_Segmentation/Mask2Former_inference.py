@@ -165,7 +165,14 @@ def load_ground_truth(image_name: str, target_size: tuple) -> dict | None:
     }
 
 
-def plot_segmentation(ax, image, result, model, confidence_threshold, instance_mode, title):
+def plot_segmentation(ax,
+                      image,
+                      result: dict,
+                      model,
+                      confidence_threshold: float,
+                      instance_mode: bool,
+                      title: str,
+                      ) -> None:
     """
     Helper function to plot segmentation on a specific matplotlib axis.
     """
@@ -291,12 +298,26 @@ def visualize_result(image,
     if ground_truth_result:
         fig, axes = plt.subplots(1, 2, figsize=(24, 12))
         plot_segmentation(axes[0], image, result, model, confidence_threshold, instance_mode, "Model Prediction")
-        plot_segmentation(axes[1], image, ground_truth_result, model, confidence_threshold, instance_mode,
-                          "Ground Truth")
+        plot_segmentation(
+            axes[1],
+            image,
+            ground_truth_result,
+            model,
+            confidence_threshold,
+            instance_mode,
+            "Ground Truth",
+        )
     else:
         fig, ax = plt.subplots(figsize=(12, 12))
-        plot_segmentation(ax, image, result, model, confidence_threshold, instance_mode,
-                          f"Prediction ({'Instance' if instance_mode else 'Class'})")
+        plot_segmentation(
+            ax,
+            image,
+            result,
+            model,
+            confidence_threshold,
+            instance_mode,
+            f"Prediction ({'Instance' if instance_mode else 'Class'})",
+        )
 
     plt.tight_layout()
     plt.show()
