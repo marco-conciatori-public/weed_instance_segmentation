@@ -15,10 +15,11 @@ MODEL_OUTPUT_DIR = 'models/mask2former_fine_tuned/'
 MODEL_CHECKPOINT = 'facebook/mask2former-swin-large-coco-instance'
 BATCH_SIZE = 2  # Reduce to 1 if OOM
 LEARNING_RATE = 5e-5
-EPOCHS = 10
+EPOCHS = 100
 GRADIENT_ACCUMULATION = 2
 MAX_INPUT_DIM = 1024  # Resize images larger than this to save VRAM
-MAX_IMAGES = 10  # Set to None for full dataset, or a number for debugging
+# MAX_IMAGES = 10
+MAX_IMAGES = None  # Set to None for full dataset, or a number for debugging
 
 # Class Mapping (Internal ID -> Name)
 # Mask2Former uses background implicitly
