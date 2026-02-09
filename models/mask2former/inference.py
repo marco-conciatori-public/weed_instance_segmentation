@@ -142,7 +142,7 @@ if __name__ == '__main__':
     if os.path.exists(img_path):
         img, res = run_inference(img_path, model, proc, dev)
         fig, ax = plt.subplots(figsize=(12, 12))
-        plot_segmentation(ax, img, res, model, score_threshold=0.5)
+        plot_segmentation(ax, img, res, model, instance_mode=False, score_threshold=0.5)
         plt.show()
     else:
         print(f"Image not found at {img_path}")
