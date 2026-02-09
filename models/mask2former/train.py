@@ -2,7 +2,7 @@ import os
 import torch
 import warnings
 from datetime import datetime
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
@@ -36,46 +36,90 @@ def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:
     return total_loss / len(data_loader)
 
 
-def train(output_dir, metadata: dict, dataset_name: str) -> dict:
-    # 1. Load the specific dataset configuration
-    ds_config = get_dataset_config(dataset_name)
+def get_unified_labels(dataset_list: list):
+    """
+    Merges ID2LABEL maps from multiple datasets into a single unified mapping.
+    Ensures no ID conflicts if classes differ.
+    """
+    unified_id2label = {}
 
+    # Simple strategy: Merge dictionaries.
+    # If IDs conflict, we assume the user maintains a consistent ID schema across datasets.
+    # Otherwise, you would need to re-map IDs here.
+    for ds_name in dataset_list:
+        ds_config = get_dataset_config(ds_name)
+        for id_num, label in ds_config.ID2LABEL.items():
+            if id_num in unified_id2label and unified_id2label[id_num] != label:
+                print(f"WARNING: ID collision for {id_num} ({unified_id2label[id_num]} vs {label}). Keeping {unified_id2label[id_num]}.")
+            else:
+                unified_id2label[id_num] = label
+
+    unified_label2id = {v: k for k, v in unified_id2label.items()}
+    print(f"Unified Classes: {unified_id2label}")
+    return unified_id2label, unified_label2id
+
+
+def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Training on: {device}')
+
+    # 1. Prepare Unified Labels
+    unified_id2label, unified_label2id = get_unified_labels(dataset_list)
     processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
 
-    # 2. Use paths from the loaded ds_config
-    train_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Train')
-    val_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Validate')
+    train_datasets = []
+    val_datasets = []
 
-    # 3. Pass label2id to WeedDataset
-    if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
-        print(f"Pre-processing {dataset_name} Train data...")
-        raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_JSON, processor, label2id=ds_config.LABEL2ID)
-        process_and_save(raw_train, output_dir=train_proc_path)
+    # 2. Iterate and Load/Process each dataset
+    for dataset_name in dataset_list:
+        print(f"\n--- Preparing Dataset: {dataset_name} ---")
+        ds_config = get_dataset_config(dataset_name)
 
-    if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
-        print(f"Pre-processing {dataset_name} Validation data...")
-        raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_JSON, processor, label2id=ds_config.LABEL2ID)
-        process_and_save(raw_val, output_dir=val_proc_path)
+        train_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Train')
+        val_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Validate')
+
+        # Check if we need to pre-process (Train)
+        # Note: If you change label mappings often, you might need to force re-processing here.
+        if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
+            print(f"Pre-processing {dataset_name} Train data...")
+            # Pass the UNIFIED label map so all datasets speak the same language
+            raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_JSON, processor, label2id=unified_label2id)
+            process_and_save(raw_train, output_dir=train_proc_path)
+
+        # Check if we need to pre-process (Validate)
+        if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
+            print(f"Pre-processing {dataset_name} Validation data...")
+            raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_JSON, processor, label2id=unified_label2id)
+            process_and_save(raw_val, output_dir=val_proc_path)
+
+        train_datasets.append(PreprocessedDataset(train_proc_path))
+        val_datasets.append(PreprocessedDataset(val_proc_path))
+
+    # 3. Concatenate Datasets
+    full_train_dataset = ConcatDataset(train_datasets)
+    full_val_dataset = ConcatDataset(val_datasets)
+
+    print(f"\nCombined Training Samples: {len(full_train_dataset)}")
+    print(f"Combined Validation Samples: {len(full_val_dataset)}")
 
     train_loader = DataLoader(
-        PreprocessedDataset(train_proc_path),
+        full_train_dataset,
         batch_size=config.BATCH_SIZE,
         shuffle=True,
         collate_fn=collate_fn,
     )
     val_loader = DataLoader(
-        PreprocessedDataset(val_proc_path),
+        full_val_dataset,
         batch_size=config.BATCH_SIZE,
         shuffle=False,
         collate_fn=collate_fn,
     )
 
-    # Initialize Model
+    # Initialize Model with UNIFIED configuration
     model = Mask2FormerForUniversalSegmentation.from_pretrained(
         config.MODEL_CHECKPOINT,
-        id2label=ds_config.ID2LABEL,
-        label2id=ds_config.LABEL2ID,
+        id2label=unified_id2label,
+        label2id=unified_label2id,
         ignore_mismatched_sizes=True,
     )
     model.to(device)
@@ -134,7 +178,7 @@ def main():
         'run_id': timestamp,
         'dataset_list': config.DATASET_LIST,
     }
-    train(run_output_dir, metadata, dataset_name=config.DATASET_LIST[0])
+    train(run_output_dir, metadata, dataset_list=config.DATASET_LIST)
 
 
 if __name__ == '__main__':
