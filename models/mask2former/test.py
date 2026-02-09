@@ -9,6 +9,8 @@ from datasets.sorghum_weed.dataset import WeedDataset
 from datasets.sorghum_weed import definitions as ds_config
 from models.metrics import test_with_metrics, print_metrics_evaluation
 
+RUN_DIR = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/'
+
 
 def test_model(run_dir):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -32,5 +34,4 @@ def test_model(run_dir):
 
 if __name__ == '__main__':
     # Adjust this path to your specific run directory
-    RUN_DIR = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/'
     test_model(RUN_DIR)
