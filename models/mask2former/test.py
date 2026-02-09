@@ -14,15 +14,15 @@ MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
 
 def test_model(model_id: str) -> None:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    best_model_path = config.MODELS_OUTPUT_DIR + model_id
+    model_path = config.MODELS_OUTPUT_DIR + model_id
 
-    if not os.path.exists(best_model_path):
-        print(f"Model not found at {best_model_path}")
+    if not os.path.exists(model_path):
+        print(f"Model not found at {model_path}")
         return
 
-    print(f"Loading model from {best_model_path}")
-    processor = AutoImageProcessor.from_pretrained(best_model_path, use_fast=False)
-    model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
+    print(f"Loading model from {model_path}")
+    processor = AutoImageProcessor.from_pretrained(model_path, use_fast=False)
+    model = Mask2FormerForUniversalSegmentation.from_pretrained(model_path).to(device)
 
     print("Loading Test Dataset...")
     test_ds = WeedDataset(ds_config.TEST_IMG_DIR, ds_config.TEST_JSON, processor)

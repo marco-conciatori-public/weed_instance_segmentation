@@ -9,10 +9,12 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 import config
 from datasets.sorghum_weed import definitions as ds_config
 
+MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
+IMG_NAME = 'TestSorghumWeed (7).JPG'
 
-def load_model(model_path):
-    if not os.path.exists(model_path):
-        model_path = config.MODEL_CHECKPOINT
+
+def load_model(model_id):
+    model_path = config.MODELS_OUTPUT_DIR + model_id
     print(f'Loading {model_path}...')
     processor = AutoImageProcessor.from_pretrained(model_path, use_fast=False)
     model = Mask2FormerForUniversalSegmentation.from_pretrained(model_path)
@@ -134,16 +136,7 @@ def plot_segmentation(ax, image, result: dict, model, instance_mode: bool = True
 
 
 if __name__ == '__main__':
-    # Example Usage
-    MODEL_PATH = 'models/mask2former_fine_tuned/YOUR_RUN_TIMESTAMP/best_model'
-    IMG_NAME = 'TestSorghumWeed (7).JPG'
-
-    # Helper to find a valid model path for testing locally
-    if not os.path.exists(MODEL_PATH):
-        # Fallback to base model for test if fine-tuned doesn't exist
-        MODEL_PATH = config.MODEL_CHECKPOINT
-
-    model, proc, dev = load_model(MODEL_PATH)
+    model, proc, dev = load_model(MODEL_ID)
     img_path = os.path.join(ds_config.TEST_IMG_DIR, IMG_NAME)
 
     if os.path.exists(img_path):
