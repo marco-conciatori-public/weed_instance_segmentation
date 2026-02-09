@@ -8,7 +8,7 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 import config
 from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
-from datasets.utils import PreprocessedDataset, collate_fn, process_and_save
+from datasets.dataset_utils import PreprocessedDataset, collate_fn, process_and_save
 
 warnings.filterwarnings('ignore', category=UserWarning, message='.*The following named arguments are not valid.*')
 SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'

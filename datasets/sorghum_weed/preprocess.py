@@ -1,7 +1,7 @@
 from transformers import AutoImageProcessor
 
 import config
-from datasets.utils import process_and_save
+from datasets.dataset_utils import process_and_save
 from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
 

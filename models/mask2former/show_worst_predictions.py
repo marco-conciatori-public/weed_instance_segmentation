@@ -8,7 +8,7 @@ from torchmetrics.detection import MeanAveragePrecision
 import config
 from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
-from datasets.utils import PreprocessedDataset, collate_fn
+from datasets.dataset_utils import PreprocessedDataset, collate_fn
 from models.mask2former.inference import load_model, run_inference, plot_segmentation
 
 N_WORST = 3

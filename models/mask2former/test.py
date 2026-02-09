@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
-from datasets.utils import collate_fn
+from datasets.dataset_utils import collate_fn
 from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
 from models.metrics import test_with_metrics, print_metrics_evaluation
