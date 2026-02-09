@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader
 from torchmetrics.detection import MeanAveragePrecision
 
 import config
+from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
-from datasets.sorghum_weed import definitions as ds_config
 from datasets.utils import PreprocessedDataset, collate_fn
 from models.mask2former.inference import load_model, run_inference, plot_segmentation
 
@@ -122,6 +122,8 @@ def main(n_worst: int = N_WORST):
     device = torch.device(device_name)
     model.eval()
 
+    ds_config = get_dataset_config(config.DATASET_LIST[0])
+
     # 2. Prepare Dataset
     test_processed_path = os.path.join(ds_config.PROCESSED_DIR, 'Test')
     if os.path.exists(test_processed_path) and len(os.listdir(test_processed_path)) > 0:
@@ -129,7 +131,12 @@ def main(n_worst: int = N_WORST):
         test_dataset = PreprocessedDataset(test_processed_path)
     else:
         print("Loading raw test data...")
-        test_dataset = WeedDataset(ds_config.TEST_IMG_DIR, ds_config.TEST_JSON, processor)
+        test_dataset = WeedDataset(
+            image_folder_path=ds_config.TEST_IMG_DIR,
+            annotation_file_path=ds_config.TEST_JSON,
+            processor=processor,
+            label2id=ds_config.LABEL2ID,
+        )
 
     if len(test_dataset) == 0:
         print("No test data found.")
