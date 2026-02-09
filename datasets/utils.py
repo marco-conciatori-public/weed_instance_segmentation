@@ -51,3 +51,20 @@ def collate_fn(batch) -> dict:
         'id_mappings': id_mappings,
         'file_names': file_names,
     }
+
+
+def process_and_save(dataset, output_dir: str) -> None:
+    os.makedirs(output_dir, exist_ok=True)
+    print(f'Saving to {output_dir}')
+
+    total = len(dataset)
+    for i in range(total):
+        if (i + 1) % 10 == 0:
+            print(f'\tProcessed {i + 1}/{total} images...', end='\r')
+
+        item = dataset[i]
+        file_name = item['file_name']
+        base_name = os.path.splitext(file_name)[0]
+        save_path = os.path.join(output_dir, f'{base_name}.pt')
+        torch.save(item, save_path)
+    print(f'\tProcessed {total}/{total} images.')

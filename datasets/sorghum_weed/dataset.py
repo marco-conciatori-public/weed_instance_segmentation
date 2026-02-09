@@ -6,16 +6,16 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 import config
-from datasets.sorghum_weed.definitions import LABEL2ID
 
 
 class WeedDataset(Dataset):
     """
     Standard PyTorch Dataset for loading raw images and JSON annotations.
     """
-    def __init__(self, image_folder_path, annotation_file_path, processor):
+    def __init__(self, image_folder_path, annotation_file_path, processor, label2id):
         self.image_folder = image_folder_path
         self.processor = processor
+        self.label2id = label2id
 
         with open(annotation_file_path, 'r') as f:
             self.data = list(json.load(f).values())
@@ -68,9 +68,9 @@ class WeedDataset(Dataset):
                 continue
 
             class_name = region_attr.get('classname', None)
-            if class_name not in LABEL2ID:
+            if class_name not in self.label2id:
                 continue
-            class_id = LABEL2ID[class_name]
+            class_id = self.label2id[class_name]
 
             if current_instance_id == 255:
                 current_instance_id += 1

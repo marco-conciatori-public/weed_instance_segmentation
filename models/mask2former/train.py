@@ -6,10 +6,9 @@ from torch.utils.data import DataLoader
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
+from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
-from datasets.utils import PreprocessedDataset, collate_fn
-from datasets.sorghum_weed import definitions as ds_config
-from datasets.sorghum_weed.preprocess import process_and_save
+from datasets.utils import PreprocessedDataset, collate_fn, process_and_save
 
 warnings.filterwarnings('ignore', category=UserWarning, message='.*The following named arguments are not valid.*')
 SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
@@ -37,25 +36,27 @@ def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:
     return total_loss / len(data_loader)
 
 
-def train(output_dir, metadata: dict) -> dict:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'Training on: {device}')
+def train(output_dir, metadata: dict, dataset_name: str) -> dict:
+    # 1. Load the specific dataset configuration
+    ds_config = get_dataset_config(dataset_name)
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
 
-    # Ensure Data is Processed
+    # 2. Use paths from the loaded ds_config
     train_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Train')
     val_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Validate')
 
+    # 3. Pass label2id to WeedDataset
     if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
-        print("Pre-processing Train data...")
-        raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_JSON, processor)
-        process_and_save(raw_train, dataset_name='Train')
+        print(f"Pre-processing {dataset_name} Train data...")
+        raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_JSON, processor, label2id=ds_config.LABEL2ID)
+        process_and_save(raw_train, output_dir=train_proc_path)
 
     if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
-        print("Pre-processing Validation data...")
-        raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_JSON, processor)
-        process_and_save(raw_val, dataset_name='Validate')
+        print(f"Pre-processing {dataset_name} Validation data...")
+        raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_JSON, processor, label2id=ds_config.LABEL2ID)
+        process_and_save(raw_val, output_dir=val_proc_path)
 
     train_loader = DataLoader(
         PreprocessedDataset(train_proc_path),
@@ -75,7 +76,7 @@ def train(output_dir, metadata: dict) -> dict:
         config.MODEL_CHECKPOINT,
         id2label=ds_config.ID2LABEL,
         label2id=ds_config.LABEL2ID,
-        ignore_mismatched_sizes=True
+        ignore_mismatched_sizes=True,
     )
     model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.LEARNING_RATE)
@@ -126,11 +127,14 @@ def train(output_dir, metadata: dict) -> dict:
 
 def main():
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, timestamp)
+    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f"{timestamp}")
     os.makedirs(run_output_dir, exist_ok=True)
 
-    metadata = {'run_id': timestamp}
-    train(run_output_dir, metadata)
+    metadata = {
+        'run_id': timestamp,
+        'dataset_list': config.DATASET_LIST,
+    }
+    train(run_output_dir, metadata, dataset_name=config.DATASET_LIST[0])
 
 
 if __name__ == '__main__':
