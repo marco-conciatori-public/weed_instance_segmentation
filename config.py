@@ -7,3 +7,5 @@ EPOCHS = 100
 GRADIENT_ACCUMULATION = 2
 MAX_INPUT_DIM = 1024
 MAX_IMAGES = None  # Set to None for full dataset, or an integer for debugging
+OUTPUT_DIR = 'output/'
+MODELS_OUTPUT_DIR = OUTPUT_DIR + 'models/'

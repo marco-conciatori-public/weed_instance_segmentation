@@ -12,7 +12,7 @@ from datasets.sorghum_weed import definitions as ds_config
 from datasets.sorghum_weed.preprocess import process_and_save
 
 warnings.filterwarnings('ignore', category=UserWarning, message='.*The following named arguments are not valid.*')
-OUTPUT_DIR = 'models/mask2former_fine_tuned/'
+SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
 
 
 def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:
@@ -126,7 +126,7 @@ def train(output_dir, metadata: dict) -> dict:
 
 def main():
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    run_output_dir = os.path.join(OUTPUT_DIR, timestamp)
+    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, timestamp)
     os.makedirs(run_output_dir, exist_ok=True)
 
     metadata = {'run_id': timestamp}
