@@ -4,23 +4,13 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
+from models.model_utils import load_model
 from datasets.factory import get_dataset_config
 
 MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
 IMG_NAME = 'TestSorghumWeed (7).JPG'
-
-
-def load_model(model_id):
-    model_path = config.MODELS_OUTPUT_DIR + model_id
-    print(f'Loading {model_path}...')
-    processor = AutoImageProcessor.from_pretrained(model_path, use_fast=False)
-    model = Mask2FormerForUniversalSegmentation.from_pretrained(model_path)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model.to(device)
-    return model, processor, device
 
 
 def run_inference(image_path, model, processor, device):

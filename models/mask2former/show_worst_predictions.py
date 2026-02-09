@@ -6,12 +6,14 @@ from torch.utils.data import DataLoader
 from torchmetrics.detection import MeanAveragePrecision
 
 import config
+from models.model_utils import load_model
 from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
 from datasets.dataset_utils import PreprocessedDataset, collate_fn
-from models.mask2former.inference import load_model, run_inference, plot_segmentation
+from models.mask2former.inference import run_inference, plot_segmentation
 
 N_WORST = 3
+MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
 
 
 def get_batch_targets(original_maps, id_mappings) -> list:
@@ -116,9 +118,9 @@ def convert_gt_map_to_result(gt_map, id_mapping) -> dict:
     }
 
 
-def main(n_worst: int = N_WORST):
+def main(model_id, n_worst: int = N_WORST):
     # 1. Load Model
-    model, processor, device_name = load_model(config.MODEL_CHECKPOINT)
+    model, processor, device_name = load_model(model_id)
     device = torch.device(device_name)
     model.eval()
 
@@ -227,4 +229,4 @@ def main(n_worst: int = N_WORST):
 
 
 if __name__ == '__main__':
-    main()
+    main(MODEL_ID, N_WORST)
