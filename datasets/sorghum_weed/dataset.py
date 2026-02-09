@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 import config
 
 
-class WeedDataset(Dataset):
+class SorghumWeedDataset(Dataset):
     """
     Standard PyTorch Dataset for loading raw images and JSON annotations.
     """

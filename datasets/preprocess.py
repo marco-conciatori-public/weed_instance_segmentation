@@ -1,15 +1,14 @@
 from transformers import AutoImageProcessor
 
 import config
+from datasets.factory import get_dataset_and_config
 from datasets.dataset_utils import process_and_save
-from datasets.factory import get_dataset_config
-from datasets.sorghum_weed.dataset import WeedDataset
 
 
 def main():
     print('--- Starting Dataset Preparation ---')
     processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
-    ds_config = get_dataset_config('sorghum_weed')
+    WeedDataset, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
 
     # Train
     train_ds = WeedDataset(

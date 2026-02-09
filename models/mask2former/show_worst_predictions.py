@@ -6,8 +6,7 @@ from torch.utils.data import DataLoader
 from torchmetrics.detection import MeanAveragePrecision
 
 import config
-from datasets.factory import get_dataset_config
-from datasets.sorghum_weed.dataset import WeedDataset
+from datasets.factory import get_dataset_and_config
 from models.mask2former.inference import run_inference
 from models.model_utils import load_model, plot_segmentation
 from datasets.dataset_utils import PreprocessedDataset, collate_fn
@@ -124,7 +123,7 @@ def main(model_id, n_worst: int = N_WORST):
     device = torch.device(device_name)
     model.eval()
 
-    ds_config = get_dataset_config(config.DATASET_LIST[0])
+    WeedDataset, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
 
     # 2. Prepare Dataset
     test_processed_path = os.path.join(ds_config.PROCESSED_DIR, 'Test')

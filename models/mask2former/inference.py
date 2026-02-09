@@ -4,7 +4,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 import config
-from datasets.factory import get_dataset_config
+from datasets.factory import get_dataset_and_config
 from models.model_utils import load_model, plot_segmentation
 
 MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
@@ -29,7 +29,7 @@ def run_inference(image_path, model, processor, device):
 
 if __name__ == '__main__':
     model, proc, dev = load_model(MODEL_ID)
-    ds_config = get_dataset_config(config.DATASET_LIST[0])
+    _, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
     img_path = os.path.join(ds_config.TEST_IMG_DIR, IMG_NAME)
 
     if os.path.exists(img_path):

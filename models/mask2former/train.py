@@ -6,8 +6,7 @@ from torch.utils.data import DataLoader, ConcatDataset
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
-from datasets.factory import get_dataset_config
-from datasets.sorghum_weed.dataset import WeedDataset
+from datasets.factory import get_dataset_and_config
 from datasets.dataset_utils import PreprocessedDataset, collate_fn, process_and_save
 
 warnings.filterwarnings('ignore', category=UserWarning, message='.*The following named arguments are not valid.*')
@@ -47,7 +46,7 @@ def get_unified_labels(dataset_list: list):
     # If IDs conflict, we assume the user maintains a consistent ID schema across datasets.
     # Otherwise, you would need to re-map IDs here.
     for ds_name in dataset_list:
-        ds_config = get_dataset_config(ds_name)
+        _, ds_config = get_dataset_and_config(ds_name)
         for id_num, label in ds_config.ID2LABEL.items():
             if id_num in unified_id2label and unified_id2label[id_num] != label:
                 print(f"WARNING: ID collision for {id_num} ({unified_id2label[id_num]} vs {label}). Keeping {unified_id2label[id_num]}.")
@@ -73,7 +72,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     # 2. Iterate and Load/Process each dataset
     for dataset_name in dataset_list:
         print(f"\n--- Preparing Dataset: {dataset_name} ---")
-        ds_config = get_dataset_config(dataset_name)
+        WeedDataset, ds_config = get_dataset_and_config(dataset_name)
 
         train_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Train')
         val_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Validate')
