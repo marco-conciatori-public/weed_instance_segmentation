@@ -1,0 +1,36 @@
+import os
+import torch
+from torch.utils.data import DataLoader
+from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
+
+import config
+from datasets.utils import collate_fn
+from datasets.sorghum_weed.dataset import WeedDataset
+from datasets.sorghum_weed import definitions as ds_config
+from models.metrics import test_with_metrics, print_metrics_evaluation
+
+
+def test_model(run_dir):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    best_model_path = os.path.join(run_dir, 'best_model')
+
+    if not os.path.exists(best_model_path):
+        print(f"Model not found at {best_model_path}")
+        return
+
+    print(f"Loading model from {best_model_path}")
+    processor = AutoImageProcessor.from_pretrained(best_model_path, use_fast=False)
+    model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
+
+    print("Loading Test Dataset...")
+    test_ds = WeedDataset(ds_config.TEST_IMG_DIR, ds_config.TEST_JSON, processor)
+    loader = DataLoader(test_ds, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+
+    metrics = test_with_metrics(model, processor, loader, device)
+    print_metrics_evaluation(metrics, model_name="Best Model")
+
+
+if __name__ == '__main__':
+    # Adjust this path to your specific run directory
+    RUN_DIR = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/'
+    test_model(RUN_DIR)

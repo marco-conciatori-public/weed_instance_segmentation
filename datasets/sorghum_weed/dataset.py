@@ -1,25 +1,26 @@
 import os
 import cv2
-import glob
 import json
-import torch
 import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 
 import config
+from datasets.sorghum_weed.definitions import LABEL2ID
 
 
 class WeedDataset(Dataset):
+    """
+    Standard PyTorch Dataset for loading raw images and JSON annotations.
+    """
     def __init__(self, image_folder_path, annotation_file_path, processor):
         self.image_folder = image_folder_path
         self.processor = processor
 
-        # Load JSON data
         with open(annotation_file_path, 'r') as f:
             self.data = list(json.load(f).values())
 
-        # Filter out images that don't exist or have no regions
+        # Filter valid entries
         self.valid_entries = []
         valid_image_count = 0
         for entry in self.data:
@@ -42,6 +43,7 @@ class WeedDataset(Dataset):
         image = Image.open(image_path).convert('RGB')
         width, height = image.size
 
+        # Resize if too large
         scale_factor = 1.0
         if max(width, height) > config.MAX_INPUT_DIM:
             scale_factor = config.MAX_INPUT_DIM / max(width, height)
@@ -52,10 +54,9 @@ class WeedDataset(Dataset):
 
         target_size = (height, width)
 
-        # Initialize with 255 (ignore_index)
+        # Create Instance Map (255 = background/ignore)
         instance_map = np.full((height, width), 255, dtype=np.int32)
         instance_id_to_semantic_id = {}
-
         regions = entry.get('regions', [])
         current_instance_id = 1
 
@@ -67,11 +68,10 @@ class WeedDataset(Dataset):
                 continue
 
             class_name = region_attr.get('classname', None)
-            if class_name not in config.LABEL2ID:
+            if class_name not in LABEL2ID:
                 continue
-            class_id = config.LABEL2ID[class_name]
+            class_id = LABEL2ID[class_name]
 
-            # don't accidentally use 255 as an instance ID
             if current_instance_id == 255:
                 current_instance_id += 1
 
@@ -84,12 +84,13 @@ class WeedDataset(Dataset):
             instance_id_to_semantic_id[current_instance_id] = class_id
             current_instance_id += 1
 
+        # Use the processor (handles normalization, padding)
         inputs = self.processor(
             images=[image],
             segmentation_maps=[instance_map],
             instance_id_to_semantic_id=instance_id_to_semantic_id,
             return_tensors='pt',
-            ignore_index=255  # Standard ignore index
+            ignore_index=255
         )
 
         return {
@@ -97,56 +98,7 @@ class WeedDataset(Dataset):
             'mask_labels': inputs['mask_labels'][0],
             'class_labels': inputs['class_labels'][0],
             'target_size': target_size,
-            'original_map': instance_map,  # Return raw map for accurate evaluation
+            'original_map': instance_map,
             'id_to_semantic': instance_id_to_semantic_id,
-            'file_name': entry['filename']  # Added for caching reference
+            'file_name': entry['filename']
         }
-
-
-class PreprocessedWeedDataset(Dataset):
-    """
-    Loads pre-processed .pt files from disk. Much faster than processing images on the fly.
-    """
-
-    def __init__(self, processed_dir: str):
-        self.processed_dir = processed_dir
-
-        # Find all .pt files in the directory
-        self.files = glob.glob(os.path.join(processed_dir, "*.pt"))
-
-        # Sort to ensure consistent order
-        self.files.sort()
-
-        if len(self.files) == 0:
-            print(f"WARNING: No .pt files found in {processed_dir}. Did you run prepare_dataset.py?")
-        else:
-            print(f"Loaded {len(self.files)} pre-processed samples from {processed_dir}")
-
-    def __len__(self):
-        return len(self.files)
-
-    def __getitem__(self, idx):
-        file_path = self.files[idx]
-        # Load the dictionary directly from the .pt file
-        data = torch.load(file_path, weights_only=False)
-        return data
-
-
-def collate_fn(batch, keep_file_names: bool = False) -> dict:
-    pixel_values = torch.stack([item['pixel_values'] for item in batch])
-    mask_labels = [item['mask_labels'] for item in batch]
-    class_labels = [item['class_labels'] for item in batch]
-    target_sizes = [item['target_size'] for item in batch]
-    original_maps = [item['original_map'] for item in batch]
-    id_mappings = [item['id_to_semantic'] for item in batch]
-    file_names = [item['file_name'] for item in batch]
-
-    return {
-        'pixel_values': pixel_values,
-        'mask_labels': mask_labels,
-        'class_labels': class_labels,
-        'target_sizes': target_sizes,
-        'original_maps': original_maps,
-        'id_mappings': id_mappings,
-        'file_names': file_names,
-    }

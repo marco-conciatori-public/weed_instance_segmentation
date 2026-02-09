@@ -5,7 +5,7 @@ from torchmetrics.detection import MeanAveragePrecision
 
 def test_with_metrics(model, processor, data_loader, device) -> dict:
     """
-    Evaluates the model on the test set using detailed metrics (mAP).
+    Evaluates the model on a dataset using MeanAveragePrecision (mAP).
     """
     model.eval()
     map_metric = MeanAveragePrecision(iou_type='segm')
@@ -18,9 +18,7 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
         pixel_values = batch['pixel_values'].to(device)
         target_sizes = batch['target_sizes']
 
-        # Construct targets from original maps to ensure precise shape matching
-        # (Processor pads images, so mask_labels are padded. Post-process crops predictions.
-        # Targets need to be unpadded to match predictions.)
+        # --- Prepare Targets ---
         targets = []
         original_maps = batch['original_maps']
         id_mappings = batch['id_mappings']
@@ -28,25 +26,16 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
         for k in range(len(pixel_values)):
             gt_map = original_maps[k]
             mapping = id_mappings[k]
-
             masks = []
             labels = []
 
-            # Reconstruct binary masks from the instance map
             unique_ids = np.unique(gt_map)
             for uid in unique_ids:
-                # Skip 255 (background)
-                if uid == 255:
+                if uid == 255 or uid not in mapping:
                     continue
 
-                # Safety check
-                if uid not in mapping:
-                    continue
-
-                # Create binary mask for this instance
                 bin_mask = torch.from_numpy((gt_map == uid)).bool()
                 class_id = mapping[uid]
-
                 masks.append(bin_mask)
                 labels.append(class_id)
 
@@ -56,12 +45,12 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
                     'labels': torch.tensor(labels).to('cpu')
                 })
             else:
-                # Handle images with no valid objects
                 targets.append({
                     'masks': torch.zeros((0, *gt_map.shape), dtype=torch.bool),
                     'labels': torch.tensor([], dtype=torch.long)
                 })
 
+        # --- Prepare Predictions ---
         with torch.no_grad():
             outputs = model(pixel_values=pixel_values)
 
@@ -75,7 +64,6 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
         formatted_predictions = []
         for pred in predictions:
             segments_info = pred['segments_info']
-
             if not segments_info:
                 formatted_predictions.append({
                     'masks': torch.empty(0, *pred['segmentation'].shape, dtype=torch.bool, device='cpu'),
@@ -86,7 +74,6 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
 
             scores = torch.tensor([info['score'] for info in segments_info])
             labels = torch.tensor([info['label_id'] for info in segments_info])
-
             instance_map = pred['segmentation']
             instance_ids = [info['id'] for info in segments_info]
             masks = torch.stack([instance_map == iid for iid in instance_ids])
@@ -100,47 +87,35 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
         map_metric.update(formatted_predictions, targets)
 
     results = map_metric.compute()
-    model.train()  # Set model back to training mode for consistency if training continues
+    model.train()
     return results
 
 
 def print_metrics_evaluation(metrics_evaluation: dict, model_name: str = 'Model') -> None:
-    """Helper function to print metrics from torchmetrics."""
     print(f'\n--- {model_name} Metrics ---')
     if not metrics_evaluation:
         print('No metrics calculated.')
         return
 
-    # Helper to safely get scalar item
     def get_scalar(key):
         val = metrics_evaluation.get(key, torch.tensor(-1))
-        # only call .item() on scalars
         return val.item() if val.numel() == 1 else -1
 
     print(f'  mAP:              {get_scalar("map"):.4f}')
     print(f'  mAP (IoU=0.50):   {get_scalar("map_50"):.4f}')
     print(f'  mAP (IoU=0.75):   {get_scalar("map_75"):.4f}')
-    print('-' * 25)
-    print(f'  mAP (small):      {get_scalar("map_small"):.4f}')
-    print(f'  mAP (medium):     {get_scalar("map_medium"):.4f}')
-    print(f'  mAP (large):      {get_scalar("map_large"):.4f}')
 
 
 def prepare_metrics_for_json(metrics) -> dict | None:
-    """Converts tensors in metrics dict to floats/lists for JSON serialization."""
     if not metrics:
         return None
-
     clean_metrics = {}
     for k, v in metrics.items():
         if isinstance(v, torch.Tensor):
-            # If scalar, convert to float (e.g. mAP)
             if v.numel() == 1:
                 clean_metrics[k] = v.item()
-            # If vector/array, convert to list (e.g. classes tensor)
             else:
                 clean_metrics[k] = v.tolist()
         else:
             clean_metrics[k] = v
-
     return clean_metrics
