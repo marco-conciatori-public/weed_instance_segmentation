@@ -5,8 +5,8 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
 from datasets.utils import collate_fn
+from datasets.factory import get_dataset_config
 from datasets.sorghum_weed.dataset import WeedDataset
-from datasets.sorghum_weed import definitions as ds_config
 from models.metrics import test_with_metrics, print_metrics_evaluation
 
 MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
@@ -24,8 +24,15 @@ def test_model(model_id: str) -> None:
     processor = AutoImageProcessor.from_pretrained(model_path, use_fast=False)
     model = Mask2FormerForUniversalSegmentation.from_pretrained(model_path).to(device)
 
+    ds_config = get_dataset_config(config.DATASET_LIST[0])
+
     print("Loading Test Dataset...")
-    test_ds = WeedDataset(ds_config.TEST_IMG_DIR, ds_config.TEST_JSON, processor)
+    test_ds = WeedDataset(
+        image_folder_path=ds_config.TEST_IMG_DIR,
+        annotation_file_path=ds_config.TEST_JSON,
+        processor=processor,
+        label2id=ds_config.LABEL2ID,
+    )
     loader = DataLoader(test_ds, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     metrics = test_with_metrics(model, processor, loader, device)

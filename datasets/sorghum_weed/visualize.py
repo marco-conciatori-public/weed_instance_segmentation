@@ -4,7 +4,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
-from datasets.sorghum_weed import definitions as ds_config
+import config
+from datasets.factory import get_dataset_config
 
 
 def visualize_dataset(image_folder: str, annotation_file: str) -> None:
@@ -72,4 +73,5 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
 
 
 if __name__ == '__main__':
+    ds_config = get_dataset_config(config.DATASET_LIST[0])
     visualize_dataset(ds_config.TEST_IMG_DIR, ds_config.TEST_JSON)

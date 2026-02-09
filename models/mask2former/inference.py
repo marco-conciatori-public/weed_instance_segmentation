@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 
 import config
-from datasets.sorghum_weed import definitions as ds_config
+from datasets.factory import get_dataset_config
 
 MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
 IMG_NAME = 'TestSorghumWeed (7).JPG'
@@ -137,6 +137,7 @@ def plot_segmentation(ax, image, result: dict, model, instance_mode: bool = True
 
 if __name__ == '__main__':
     model, proc, dev = load_model(MODEL_ID)
+    ds_config = get_dataset_config(config.DATASET_LIST[0])
     img_path = os.path.join(ds_config.TEST_IMG_DIR, IMG_NAME)
 
     if os.path.exists(img_path):

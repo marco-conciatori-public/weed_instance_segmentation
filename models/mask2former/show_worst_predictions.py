@@ -107,7 +107,7 @@ def convert_gt_map_to_result(gt_map, id_mapping) -> dict:
         segments_info.append({
             'id': int(uid),
             'label_id': id_mapping[uid],
-            'score': 1.0 # GT is always 100%
+            'score': 1.0  # GT is always 100%
         })
 
     return {
