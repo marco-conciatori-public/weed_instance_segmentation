@@ -12,7 +12,7 @@ from datasets.sorghum_weed import definitions as ds_config
 from datasets.sorghum_weed.preprocess import process_and_save
 
 warnings.filterwarnings('ignore', category=UserWarning, message='.*The following named arguments are not valid.*')
-SPECIFIC_OUTPUT_DIR = '../../' + config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
+SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
 
 
 def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:

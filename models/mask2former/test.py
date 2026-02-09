@@ -9,12 +9,12 @@ from datasets.sorghum_weed.dataset import WeedDataset
 from datasets.sorghum_weed import definitions as ds_config
 from models.metrics import test_with_metrics, print_metrics_evaluation
 
-RUN_DIR = 'models/mask2former_fine_tuned/2026-02-06_02-49-29/'
+MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
 
 
-def test_model(run_dir):
+def test_model(model_id: str) -> None:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    best_model_path = os.path.join(run_dir, 'best_model')
+    best_model_path = config.MODELS_OUTPUT_DIR + model_id
 
     if not os.path.exists(best_model_path):
         print(f"Model not found at {best_model_path}")
@@ -34,4 +34,4 @@ def test_model(run_dir):
 
 if __name__ == '__main__':
     # Adjust this path to your specific run directory
-    test_model(RUN_DIR)
+    test_model(MODEL_ID)
