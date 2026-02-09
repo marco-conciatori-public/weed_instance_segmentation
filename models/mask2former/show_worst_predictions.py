@@ -137,7 +137,7 @@ def main(n_worst: int = N_WORST):
 
     data_loader = DataLoader(
         test_dataset,
-        batch_size=1, # Important for per-image scoring
+        batch_size=1,  # Important for per-image scoring
         shuffle=False,
         collate_fn=collate_fn,
     )
