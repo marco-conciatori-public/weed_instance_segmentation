@@ -3,8 +3,8 @@ import torch
 from transformers import AutoImageProcessor
 
 import config
-from datasets.sorghum_weed import definitions as ds_config
 from datasets.sorghum_weed.dataset import WeedDataset
+from datasets.sorghum_weed import definitions as ds_config
 
 
 def process_and_save(dataset, dataset_name: str) -> None:
