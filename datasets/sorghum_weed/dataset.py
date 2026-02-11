@@ -12,7 +12,7 @@ class SorghumWeedDataset(Dataset):
     """
     Standard PyTorch Dataset for loading raw images and JSON annotations.
     """
-    def __init__(self, image_folder_path, annotation_file_path, processor, label2id):
+    def __init__(self, image_folder_path, annotation_file_path, processor, label2id: dict):
         self.image_folder = image_folder_path
         self.processor = processor
         self.label2id = label2id
@@ -36,7 +36,7 @@ class SorghumWeedDataset(Dataset):
     def __len__(self):
         return len(self.valid_entries)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict:
         entry = self.valid_entries[idx]
         image_path = os.path.join(self.image_folder, entry['filename'])
 
