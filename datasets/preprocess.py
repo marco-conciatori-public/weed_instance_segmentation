@@ -1,5 +1,6 @@
 import os
 import torch
+import shutil
 from torch.utils.data import random_split
 from transformers import AutoImageProcessor
 
@@ -13,6 +14,11 @@ def main():
     for dataset_name in config.DATASET_LIST:
         print(f'=== Processing Dataset: {dataset_name} ===')
         WeedDataset, ds_config = get_dataset_and_config(dataset_name)
+
+        # Check if we should force reprocessing
+        if config.FORCE_PREPROCESSING and os.path.exists(ds_config.PROCESSED_DIR):
+            print(f'\tForce Preprocessing: Cleaning {ds_config.PROCESSED_DIR}...')
+            shutil.rmtree(ds_config.PROCESSED_DIR)
 
         # check if dataset has already been preprocessed
         try:
