@@ -50,7 +50,8 @@ def get_unified_labels(dataset_list: list):
         _, ds_config = get_dataset_and_config(ds_name)
         for id_num, label in ds_config.ID2LABEL.items():
             if id_num in unified_id2label and unified_id2label[id_num] != label:
-                print(f'WARNING: ID collision for {id_num} ({unified_id2label[id_num]} vs {label}). Keeping {unified_id2label[id_num]}.')
+                print(f'WARNING: ID collision for {id_num} ({unified_id2label[id_num]} vs {label}).'
+                      f' Keeping {unified_id2label[id_num]}.')
             else:
                 unified_id2label[id_num] = label
 
