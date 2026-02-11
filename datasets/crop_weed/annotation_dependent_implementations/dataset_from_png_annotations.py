@@ -22,20 +22,14 @@ class CropWeedDataset(Dataset):
         self.label2id = label2id
 
         # List all images
-        extensions = ['*.png', '*.jpg', '*.jpeg', '*.PNG', '*.JPG']
-        self.image_files = []
-        for ext in extensions:
-            self.image_files.extend(glob.glob(os.path.join(self.image_folder, ext)))
-
+        self.image_files = glob.glob(os.path.join(self.image_folder, '*.png'))
         self.image_files.sort()
 
         # Filter valid pairs
         self.valid_files = []
         valid_count = 0
-
         for img_path in self.image_files:
             file_name = os.path.basename(img_path)
-            # Assumption: Mask has the same name but is always .png
             base_name = os.path.splitext(file_name)[0]
             image_number = base_name.split('_')[0]
             mask_name = image_number + '_annotation.png'

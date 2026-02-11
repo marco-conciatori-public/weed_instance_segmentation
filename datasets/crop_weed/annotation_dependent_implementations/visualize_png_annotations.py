@@ -24,14 +24,10 @@ def visualize_dataset(image_folder: str, annotation_folder: str) -> None:
     }
 
     print(f'Searching for images in {image_folder}...')
-    extensions = ['*.png', '*.jpg', '*.jpeg', '*.PNG', '*.JPG']
-    image_files = []
-    for ext in extensions:
-        image_files.extend(glob.glob(os.path.join(image_folder, ext)))
-
+    image_files = glob.glob(os.path.join(image_folder, '*.png'))
     image_files.sort()
-    valid_img_counter = 0
 
+    valid_img_counter = 0
     for img_path in image_files:
         file_name = os.path.basename(img_path)
         base_name = os.path.splitext(file_name)[0]

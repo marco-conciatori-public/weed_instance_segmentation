@@ -22,18 +22,12 @@ class PhenoBenchDataset(Dataset):
         self.label2id = label2id
 
         # List all images
-        # Supporting both png and jpg extensions commonly found in datasets
-        extensions = ['*.png', '*.jpg', '*.jpeg', '*.PNG', '*.JPG']
-        self.image_files = []
-        for ext in extensions:
-            self.image_files.extend(glob.glob(os.path.join(self.image_folder, ext)))
-
+        self.image_files = glob.glob(os.path.join(self.image_folder, '*.png'))
         self.image_files.sort()
 
         # Filter pairs
         self.valid_files = []
         valid_count = 0
-
         for img_path in self.image_files:
             file_name = os.path.basename(img_path)
             # Mask assumption: same basename, definitely .png
