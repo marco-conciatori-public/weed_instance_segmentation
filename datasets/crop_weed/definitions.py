@@ -19,6 +19,13 @@ TRAIN_VAL_TEST_SPLIT = [0.8, 0.2, 0.0]
 if abs(sum(TRAIN_VAL_TEST_SPLIT) - 1.0) > 1e-6:
     raise ValueError(f'TRAIN_VAL_TEST_SPLIT must sum to 1.0, but got {sum(TRAIN_VAL_TEST_SPLIT)}')
 
+# select the annotation format
+# this dataset has 2 type of annotations: yaml and png. The yaml annotations are better for distinguishing single
+# instances, but the segmentation is very coarse, more lyke a polygon contour. The png annotations are more precise,
+# but they do not distinguish between single instances, so they are more like a semantic segmentation.
+# ANNOTATION_FORMAT = 'yaml'
+ANNOTATION_FORMAT = 'png'
+
 # Class Mapping
 ID2LABEL = {
     0: 'crop',
