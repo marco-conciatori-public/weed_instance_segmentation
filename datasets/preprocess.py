@@ -10,7 +10,6 @@ def main():
         print(f'=== Processing Dataset: {dataset_name} ===')
         processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
         WeedDataset, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
-        preprocessed_dataset_path = ds_config.DATASET_ROOT + 'preprocessed/'
 
         # Train
         train_ds = WeedDataset(
@@ -19,7 +18,7 @@ def main():
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )
-        process_and_save(train_ds, output_dir=preprocessed_dataset_path + 'Train/')
+        process_and_save(train_ds, output_dir=ds_config.PROCESSED_DIR + 'Train/')
 
         # Validate
         val_ds = WeedDataset(
@@ -28,7 +27,7 @@ def main():
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )
-        process_and_save(val_ds, output_dir=preprocessed_dataset_path + 'Validate/')
+        process_and_save(val_ds, output_dir=ds_config.PROCESSED_DIR + 'Validate/')
 
         # Test
         test_ds = WeedDataset(
@@ -37,7 +36,7 @@ def main():
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )
-        process_and_save(test_ds, output_dir=preprocessed_dataset_path + 'Test/')
+        process_and_save(test_ds, output_dir=ds_config.PROCESSED_DIR + 'Test/')
 
         print(f'\tFinished processing {dataset_name}')
 
