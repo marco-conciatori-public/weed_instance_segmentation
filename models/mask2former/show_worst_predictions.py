@@ -134,7 +134,7 @@ def main(model_id, n_worst: int = N_WORST):
         print("Loading raw test data...")
         test_dataset = WeedDataset(
             image_folder_path=ds_config.TEST_IMG_DIR,
-            annotation_file_path=ds_config.TEST_JSON,
+            annotation_file_path=ds_config.TEST_ANNOTATIONS,
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )

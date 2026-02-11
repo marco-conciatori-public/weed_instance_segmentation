@@ -84,13 +84,13 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
             print(f'Pre-processing {dataset_name} Train data...')
             # Pass the UNIFIED label map so all datasets speak the same language
-            raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_JSON, processor, label2id=unified_label2id)
+            raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_ANNOTATIONS, processor, label2id=unified_label2id)
             process_and_save(raw_train, output_dir=train_proc_path)
 
         # Check if we need to pre-process (Validate)
         if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
             print(f'Pre-processing {dataset_name} Validation data...')
-            raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_JSON, processor, label2id=unified_label2id)
+            raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_ANNOTATIONS, processor, label2id=unified_label2id)
             process_and_save(raw_val, output_dir=val_proc_path)
 
         train_datasets.append(PreprocessedDataset(train_proc_path))

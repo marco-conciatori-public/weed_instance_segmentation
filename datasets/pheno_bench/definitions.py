@@ -5,13 +5,13 @@ DATASET_ROOT = 'F:/LAVORO/Miningful/weed_segmentation_dataset/PhenoBench/'
 
 # Raw Data Paths
 TRAIN_IMG_DIR = os.path.join(DATASET_ROOT, 'train/images/')
-TRAIN_JSON = os.path.join(DATASET_ROOT, 'train/semantics/')
+TRAIN_ANNOTATIONS = os.path.join(DATASET_ROOT, 'train/semantics/')
 
 VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'val/images/')
-VAL_JSON = os.path.join(DATASET_ROOT, 'val/semantics/')
+VAL_ANNOTATIONS = os.path.join(DATASET_ROOT, 'val/semantics/')
 
 TEST_IMG_DIR = os.path.join(DATASET_ROOT, 'test/images/')
-TEST_JSON = os.path.join(DATASET_ROOT, 'test/semantics/')
+TEST_ANNOTATIONS = os.path.join(DATASET_ROOT, 'test/semantics/')
 
 # Processed Data Output
 PROCESSED_DIR = os.path.join(DATASET_ROOT, 'Processed/')

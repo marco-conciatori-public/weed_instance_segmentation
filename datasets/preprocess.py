@@ -22,7 +22,7 @@ def main():
         # Train
         train_ds = WeedDataset(
             image_folder_path=ds_config.TRAIN_IMG_DIR,
-            annotation_file_path=ds_config.TRAIN_JSON,
+            annotation_file_path=ds_config.TRAIN_ANNOTATIONS,
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )
@@ -31,7 +31,7 @@ def main():
         # Validate
         val_ds = WeedDataset(
             image_folder_path=ds_config.VAL_IMG_DIR,
-            annotation_file_path=ds_config.VAL_JSON,
+            annotation_file_path=ds_config.VAL_ANNOTATIONS,
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )
@@ -40,7 +40,7 @@ def main():
         # Test
         test_ds = WeedDataset(
             image_folder_path=ds_config.TEST_IMG_DIR,
-            annotation_file_path=ds_config.TEST_JSON,
+            annotation_file_path=ds_config.TEST_ANNOTATIONS,
             processor=processor,
             label2id=ds_config.LABEL2ID,
         )

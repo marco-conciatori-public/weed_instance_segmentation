@@ -74,4 +74,4 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
 
 if __name__ == '__main__':
     _, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
-    visualize_dataset(ds_config.TEST_IMG_DIR, ds_config.TEST_JSON)
+    visualize_dataset(ds_config.TEST_IMG_DIR, ds_config.TEST_ANNOTATIONS)

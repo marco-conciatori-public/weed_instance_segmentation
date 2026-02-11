@@ -5,13 +5,13 @@ DATASET_ROOT = 'F:/LAVORO/Miningful/weed_segmentation_dataset/SorghumWeedDataset
 
 # Raw Data Paths
 TRAIN_IMG_DIR = os.path.join(DATASET_ROOT, 'Train/')
-TRAIN_JSON = os.path.join(DATASET_ROOT, 'Annotations/TrainSorghumWeed_json.json')
+TRAIN_ANNOTATIONS = os.path.join(DATASET_ROOT, 'Annotations/TrainSorghumWeed_json.json')
 
 VAL_IMG_DIR = os.path.join(DATASET_ROOT, 'Validate/')
-VAL_JSON = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
+VAL_ANNOTATIONS = os.path.join(DATASET_ROOT, 'Annotations/ValidateSorghumWeed_json.json')
 
 TEST_IMG_DIR = os.path.join(DATASET_ROOT, 'Test/')
-TEST_JSON = os.path.join(DATASET_ROOT, 'Annotations/TestSorghumWeed_json.json')
+TEST_ANNOTATIONS = os.path.join(DATASET_ROOT, 'Annotations/TestSorghumWeed_json.json')
 
 # Processed Data Output
 PROCESSED_DIR = os.path.join(DATASET_ROOT, 'Processed/')

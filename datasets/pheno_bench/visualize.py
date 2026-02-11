@@ -103,4 +103,4 @@ def visualize_dataset(image_folder: str, annotation_folder: str) -> None:
 
 
 if __name__ == '__main__':
-    visualize_dataset(pb_definitions.TRAIN_IMG_DIR, pb_definitions.TRAIN_JSON)
+    visualize_dataset(pb_definitions.TEST_IMG_DIR, pb_definitions.TEST_ANNOTATIONS)

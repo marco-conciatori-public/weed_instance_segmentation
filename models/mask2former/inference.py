@@ -134,7 +134,7 @@ if __name__ == '__main__':
         gt_res = load_ground_truth(
             image_name=IMG_NAME,
             target_size=img.size,
-            annotation_file=ds_config.TEST_JSON,
+            annotation_file=ds_config.TEST_ANNOTATIONS,
             img_dir=ds_config.TEST_IMG_DIR,
             label2id=ds_config.LABEL2ID
         )

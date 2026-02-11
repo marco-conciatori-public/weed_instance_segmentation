@@ -28,7 +28,7 @@ def test_model(model_id: str) -> None:
     print('Loading Test Dataset...')
     test_ds = WeedDataset(
         image_folder_path=ds_config.TEST_IMG_DIR,
-        annotation_file_path=ds_config.TEST_JSON,
+        annotation_file_path=ds_config.TEST_ANNOTATIONS,
         processor=processor,
         label2id=ds_config.LABEL2ID,
     )
