@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import warnings
 from datetime import datetime
@@ -178,6 +179,15 @@ def main():
         'dataset_list': config.DATASET_LIST,
     }
     train(run_output_dir, metadata, dataset_list=config.DATASET_LIST)
+
+    # Save metadata
+    metadata_path = os.path.join(run_output_dir, 'metadata.json')
+    try:
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+        print(f'\nRun metadata saved to "{metadata_path}"')
+    except Exception as e:
+        print(f'\nError saving metadata to "{metadata_path}":\n\t {e}')
 
 
 if __name__ == '__main__':
