@@ -68,6 +68,9 @@ def visualize_dataset(image_folder: str, annotation_file: str) -> None:
         except Exception as e:
             print(f'Error processing image: {e}')
 
+        if config.MAX_IMAGES is not None and valid_img_counter >= config.MAX_IMAGES:
+            break
+
     if valid_img_counter == 0:
         print('No valid images found.')
 
