@@ -13,6 +13,7 @@ MAX_IMAGES = None  # Set to None for full dataset, or an integer for debugging
 DATASET_LIST = [
     'sorghum_weed',
     'pheno_bench',
+    'crop_weed',
 ]
 
 # Output Directories
