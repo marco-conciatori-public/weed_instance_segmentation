@@ -55,7 +55,7 @@ def collate_fn(batch) -> dict:
 
 def process_and_save(dataset, output_dir: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
-    print(f'\tSaving to "{output_dir}/"')
+    print(f'\tSaving to "{output_dir}"')
 
     total = len(dataset)
     for i in range(total):
