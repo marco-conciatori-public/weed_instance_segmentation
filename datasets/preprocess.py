@@ -19,6 +19,12 @@ def main():
             print(f'\tDataset "{dataset_name}" already preprocessed, skipping...\n')
             continue
 
+        # check if the dataset has a predefined train/val/test split
+        if not getattr(ds_config, 'TRAIN_IMG_DIR', False):
+            # if not, create one from the main image folder and annotation file
+            train_val_test_split = ds_config.TRAIN_VAL_TEST_SPLIT
+            pass
+
         # Train
         train_ds = WeedDataset(
             image_folder_path=ds_config.TRAIN_IMG_DIR,
