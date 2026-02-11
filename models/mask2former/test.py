@@ -8,7 +8,7 @@ from datasets.dataset_utils import collate_fn
 from datasets.factory import get_dataset_and_config
 from models.metrics import test_with_metrics, print_metrics_evaluation
 
-MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
+MODEL_ID = 'mask2former_fine_tuned/2026-02-09_23-50-52/best_model/'
 
 
 def test_model(model_id: str) -> None:

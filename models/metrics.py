@@ -8,6 +8,7 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
     Evaluates the model on a dataset using MeanAveragePrecision (mAP).
     """
     model.eval()
+    # map_metric = MeanAveragePrecision(iou_type='segm', max_detection_thresholds=[1, 10, 150])
     map_metric = MeanAveragePrecision(iou_type='segm')
 
     print('Calculating Metrics...')
@@ -101,9 +102,9 @@ def print_metrics_evaluation(metrics_evaluation: dict, model_name: str = 'Model'
         val = metrics_evaluation.get(key, torch.tensor(-1))
         return val.item() if val.numel() == 1 else -1
 
-    print(f'  mAP:              {get_scalar("map"):.4f}')
-    print(f'  mAP (IoU=0.50):   {get_scalar("map_50"):.4f}')
-    print(f'  mAP (IoU=0.75):   {get_scalar("map_75"):.4f}')
+    print(f'  mAP:            {100 * get_scalar("map"):.2f} %')
+    print(f'  mAP (IoU=0.50): {100 * get_scalar("map_50"):.2f} %')
+    print(f'  mAP (IoU=0.75): {100 * get_scalar("map_75"):.2f} %')
 
 
 def prepare_metrics_for_json(metrics) -> dict | None:

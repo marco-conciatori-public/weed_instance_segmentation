@@ -7,7 +7,7 @@ import config
 from datasets.factory import get_dataset_and_config
 from models.model_utils import load_model, plot_segmentation
 
-MODEL_ID = 'mask2former_fine_tuned/2026-02-09_19-50-56/best_model/'
+MODEL_ID = 'mask2former_fine_tuned/2026-02-09_23-50-52/best_model/'
 IMG_NAME = 'TestSorghumWeed (7).JPG'
 
 
