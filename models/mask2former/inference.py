@@ -55,7 +55,7 @@ def load_ground_truth(image_name: str,
     entry = next((item for item in data.values() if item['filename'] == image_name), None)
 
     if not entry:
-        print(f"No annotation found for '{image_name}'")
+        print(f'No annotation found for "{image_name}"')
         return None
 
     # Determine scale factor based on original image size vs target size

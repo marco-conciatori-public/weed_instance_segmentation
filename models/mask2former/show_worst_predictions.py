@@ -128,10 +128,10 @@ def main(model_id, n_worst: int = N_WORST):
     # 2. Prepare Dataset
     test_processed_path = os.path.join(ds_config.PROCESSED_DIR, 'Test')
     if os.path.exists(test_processed_path) and len(os.listdir(test_processed_path)) > 0:
-        print(f"Loading pre-processed test data from {test_processed_path}")
+        print(f'Loading pre-processed test data from "{test_processed_path}"')
         test_dataset = PreprocessedDataset(test_processed_path)
     else:
-        print("Loading raw test data...")
+        print('Loading raw test data...')
         test_dataset = WeedDataset(
             image_folder_path=ds_config.TEST_IMG_DIR,
             annotation_file_path=ds_config.TEST_ANNOTATIONS,
@@ -140,7 +140,7 @@ def main(model_id, n_worst: int = N_WORST):
         )
 
     if len(test_dataset) == 0:
-        print("No test data found.")
+        print('No test data found.')
         return
 
     data_loader = DataLoader(
@@ -154,12 +154,12 @@ def main(model_id, n_worst: int = N_WORST):
     scored_images = []
     metric = MeanAveragePrecision(iou_type='segm')
 
-    print(f"\nEvaluating {len(test_dataset)} images...")
+    print(f'\nEvaluating {len(test_dataset)} images...')
 
     with torch.no_grad():
         for i, batch in enumerate(data_loader):
             if (i + 1) % 5 == 0:
-                print(f"  Processing {i + 1}/{len(test_dataset)}...", end='\r')
+                print(f'  Processing {i + 1}/{len(test_dataset)}...', end='\r')
 
             pixel_values = batch['pixel_values'].to(device)
             target_sizes = batch['target_sizes']
@@ -190,21 +190,21 @@ def main(model_id, n_worst: int = N_WORST):
     scored_images.sort(key=lambda x: x['score'])
     worst_cases = scored_images[:n_worst]
 
-    print(f"\n\n--- Top {n_worst} Worst Predictions (by mAP) ---")
+    print(f'\n\n--- Top {n_worst} Worst Predictions (by mAP) ---')
     for case in worst_cases:
-        print(f"File: {case['file_name']} | mAP: {case['score']:.4f}")
+        print(f'File: {case["file_name"]} | mAP: {case["score"]:.4f}')
 
     # 5. Visualize
-    print("\nVisualizing...")
+    print('\nVisualizing...')
     for case in worst_cases:
         file_name = case['file_name']
         score = case['score']
-        print(f"Visualizing: {file_name} (mAP: {score:.4f})")
+        print(f'Visualizing: {file_name} (mAP: {score:.4f})')
 
         # Load original image for plotting
         img_path = os.path.join(ds_config.TEST_IMG_DIR, file_name)
         if not os.path.exists(img_path):
-            print(f"Image not found: {img_path}")
+            print(f'Image not found: {img_path}')
             continue
 
         # Re-run inference for the visualization specific logic (resizing, plotting structure)
@@ -218,10 +218,10 @@ def main(model_id, n_worst: int = N_WORST):
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 10))
 
         plot_segmentation(axes[0], image, result, model, instance_mode=False, score_threshold=0.5)
-        axes[0].set_title(f"Prediction (mAP: {score:.2f})")
+        axes[0].set_title(f'Prediction (mAP: {score:.2f})')
 
         plot_segmentation(axes[1], image, gt_result, model, instance_mode=False)
-        axes[1].set_title("Ground Truth")
+        axes[1].set_title('Ground Truth')
 
         plt.tight_layout()
         plt.show()
