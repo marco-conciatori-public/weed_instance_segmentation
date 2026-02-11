@@ -6,9 +6,9 @@ from datasets.dataset_utils import process_and_save
 
 
 def main():
+    processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
     for dataset_name in config.DATASET_LIST:
         print(f'=== Processing Dataset: {dataset_name} ===')
-        processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
         WeedDataset, ds_config = get_dataset_and_config(dataset_name)
 
         # Train
@@ -38,9 +38,9 @@ def main():
         )
         process_and_save(test_ds, output_dir=ds_config.PROCESSED_DIR + 'Test/')
 
-        print(f'\tFinished processing {dataset_name}')
+        print(f'\tFinished processing {dataset_name}\n')
 
-    print('\n--- Processing Complete ---')
+    print('--- Processing Complete ---\n')
 
 
 if __name__ == '__main__':
