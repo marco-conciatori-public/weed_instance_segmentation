@@ -15,7 +15,7 @@ IMG_NAME = 'TestSorghumWeed (7).JPG'
 
 
 def run_inference(image_path, model, processor, device):
-    image = Image.open(image_path).convert("RGB")
+    image = Image.open(image_path).convert('RGB')
     w, h = image.size
     if max(w, h) > config.MAX_INPUT_DIM:
         scale = config.MAX_INPUT_DIM / max(w, h)
@@ -41,14 +41,14 @@ def load_ground_truth(image_name: str,
     compatible with the visualization function.
     """
     if not os.path.exists(annotation_file):
-        print(f"Annotation file not found: {annotation_file}")
+        print(f'Annotation file not found: {annotation_file}')
         return None
 
     try:
         with open(annotation_file, 'r') as f:
             data = json.load(f)
     except Exception as e:
-        print(f"Error loading JSON: {e}")
+        print(f'Error loading JSON: {e}')
         return None
 
     # Find entry for the specific image
@@ -66,7 +66,7 @@ def load_ground_truth(image_name: str,
             orig_w, orig_h = orig_img.size
     else:
         # Fallback: assume the JSON coordinates match the target_size
-        print("Warning: Original image file not found. Assuming 1:1 scale.")
+        print('Warning: Original image file not found. Assuming 1:1 scale.')
         orig_w, orig_h = target_size
 
     target_w, target_h = target_size
@@ -145,11 +145,11 @@ if __name__ == '__main__':
 
             # Plot Prediction
             plot_segmentation(axes[0], img, res, model, instance_mode=False, score_threshold=0.5)
-            axes[0].set_title("Prediction")
+            axes[0].set_title('Prediction')
 
             # Plot Ground Truth
             plot_segmentation(axes[1], img, gt_res, model, instance_mode=False)
-            axes[1].set_title("Ground Truth")
+            axes[1].set_title('Ground Truth')
 
             plt.tight_layout()
             plt.show()
@@ -157,8 +157,8 @@ if __name__ == '__main__':
             # Fallback to single plot if GT fails
             fig, ax = plt.subplots(figsize=(12, 12))
             plot_segmentation(ax, img, res, model, instance_mode=False, score_threshold=0.5)
-            ax.set_title("Prediction")
+            ax.set_title('Prediction')
             plt.show()
 
     else:
-        print(f"Image not found at {img_path}")
+        print(f'Image not found at {img_path}')

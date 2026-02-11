@@ -49,12 +49,12 @@ def get_unified_labels(dataset_list: list):
         _, ds_config = get_dataset_and_config(ds_name)
         for id_num, label in ds_config.ID2LABEL.items():
             if id_num in unified_id2label and unified_id2label[id_num] != label:
-                print(f"WARNING: ID collision for {id_num} ({unified_id2label[id_num]} vs {label}). Keeping {unified_id2label[id_num]}.")
+                print(f'WARNING: ID collision for {id_num} ({unified_id2label[id_num]} vs {label}). Keeping {unified_id2label[id_num]}.')
             else:
                 unified_id2label[id_num] = label
 
     unified_label2id = {v: k for k, v in unified_id2label.items()}
-    print(f"Unified Classes: {unified_id2label}")
+    print(f'Unified Classes: {unified_id2label}')
     return unified_id2label, unified_label2id
 
 
@@ -71,7 +71,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
     # 2. Iterate and Load/Process each dataset
     for dataset_name in dataset_list:
-        print(f"\n--- Preparing Dataset: {dataset_name} ---")
+        print(f'\n--- Preparing Dataset: {dataset_name} ---')
         WeedDataset, ds_config = get_dataset_and_config(dataset_name)
 
         train_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Train')
@@ -80,14 +80,14 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         # Check if we need to pre-process (Train)
         # Note: If you change label mappings often, you might need to force re-processing here.
         if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
-            print(f"Pre-processing {dataset_name} Train data...")
+            print(f'Pre-processing {dataset_name} Train data...')
             # Pass the UNIFIED label map so all datasets speak the same language
             raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_JSON, processor, label2id=unified_label2id)
             process_and_save(raw_train, output_dir=train_proc_path)
 
         # Check if we need to pre-process (Validate)
         if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
-            print(f"Pre-processing {dataset_name} Validation data...")
+            print(f'Pre-processing {dataset_name} Validation data...')
             raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_JSON, processor, label2id=unified_label2id)
             process_and_save(raw_val, output_dir=val_proc_path)
 
@@ -98,8 +98,8 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     full_train_dataset = ConcatDataset(train_datasets)
     full_val_dataset = ConcatDataset(val_datasets)
 
-    print(f"\nCombined Training Samples: {len(full_train_dataset)}")
-    print(f"Combined Validation Samples: {len(full_val_dataset)}")
+    print(f'\nCombined Training Samples: {len(full_train_dataset)}')
+    print(f'Combined Validation Samples: {len(full_val_dataset)}')
 
     train_loader = DataLoader(
         full_train_dataset,
@@ -170,7 +170,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
 def main():
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f"{timestamp}")
+    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f'{timestamp}')
     os.makedirs(run_output_dir, exist_ok=True)
 
     metadata = {

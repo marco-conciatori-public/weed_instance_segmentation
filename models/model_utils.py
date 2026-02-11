@@ -70,7 +70,7 @@ def plot_segmentation(ax,
         if hasattr(model.config, 'id2label') and label_id in model.config.id2label:
             label_text = model.config.id2label[label_id]
         else:
-            label_text = id2label.get(label_id, f"Class {label_id}")
+            label_text = id2label.get(label_id, f'Class {label_id}')
 
         count = class_counts.get(label_text, 0) + 1
         class_counts[label_text] = count
@@ -81,7 +81,7 @@ def plot_segmentation(ax,
 
         if instance_mode:
             rgb = color_palette[i % len(color_palette)][:3]
-            display_label = f"{label_text} {count}"
+            display_label = f'{label_text} {count}'
             should_add_to_legend = True
         else:
             color_idx = class_color_index_map[label_id]

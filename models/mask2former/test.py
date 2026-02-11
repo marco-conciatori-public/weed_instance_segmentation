@@ -16,16 +16,16 @@ def test_model(model_id: str) -> None:
     model_path = config.MODELS_OUTPUT_DIR + model_id
 
     if not os.path.exists(model_path):
-        print(f"Model not found at {model_path}")
+        print(f'Model not found at {model_path}')
         return
 
-    print(f"Loading model from {model_path}")
+    print(f'Loading model from {model_path}')
     processor = AutoImageProcessor.from_pretrained(model_path, use_fast=False)
     model = Mask2FormerForUniversalSegmentation.from_pretrained(model_path).to(device)
 
     WeedDataset, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
 
-    print("Loading Test Dataset...")
+    print('Loading Test Dataset...')
     test_ds = WeedDataset(
         image_folder_path=ds_config.TEST_IMG_DIR,
         annotation_file_path=ds_config.TEST_JSON,
@@ -35,7 +35,7 @@ def test_model(model_id: str) -> None:
     loader = DataLoader(test_ds, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     metrics = test_with_metrics(model, processor, loader, device)
-    print_metrics_evaluation(metrics, model_name="Best Model")
+    print_metrics_evaluation(metrics, model_name='Best Model')
 
 
 if __name__ == '__main__':
