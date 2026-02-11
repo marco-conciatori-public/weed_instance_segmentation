@@ -116,6 +116,18 @@ class CropWeedDataset(Dataset):
             xs = points_dict.get('x', [])
             ys = points_dict.get('y', [])
 
+            # --- Check data types ---
+            # If the parser returned a float (single point) or None, we skip it.
+            # We strictly need lists to form a polygon.
+            if not isinstance(xs, list) or not isinstance(ys, list):
+                if isinstance(xs, float) and isinstance(ys, float):
+                    xs = [xs]
+                    ys = [ys]
+                else:
+                    print('skipping region with invalid points format (not lists)')
+                    print(f'xs: {xs}\n ys: {ys}')
+                    continue
+
             if len(xs) != len(ys) or len(xs) < 3:
                 continue  # Skip invalid polygons
 
