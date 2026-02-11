@@ -84,13 +84,23 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
             print(f'Pre-processing {dataset_name} Train data...')
             # Pass the UNIFIED label map so all datasets speak the same language
-            raw_train = WeedDataset(ds_config.TRAIN_IMG_DIR, ds_config.TRAIN_ANNOTATIONS, processor, label2id=unified_label2id)
+            raw_train = WeedDataset(
+                image_folder_path=ds_config.TRAIN_IMG_DIR,
+                annotation_folder=ds_config.TRAIN_ANNOTATIONS,
+                processor=processor,
+                label2id=unified_label2id,
+            )
             process_and_save(raw_train, output_dir=train_proc_path)
 
         # Check if we need to pre-process (Validate)
         if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
             print(f'Pre-processing {dataset_name} Validation data...')
-            raw_val = WeedDataset(ds_config.VAL_IMG_DIR, ds_config.VAL_ANNOTATIONS, processor, label2id=unified_label2id)
+            raw_val = WeedDataset(
+                image_folder_path=ds_config.VAL_IMG_DIR,
+                annotation_folder=ds_config.VAL_ANNOTATIONS,
+                processor=processor,
+                label2id=unified_label2id,
+            )
             process_and_save(raw_val, output_dir=val_proc_path)
 
         train_datasets.append(PreprocessedDataset(train_proc_path))
@@ -104,13 +114,13 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     print(f'Combined Validation Samples: {len(full_val_dataset)}')
 
     train_loader = DataLoader(
-        full_train_dataset,
+        dataset=full_train_dataset,
         batch_size=config.BATCH_SIZE,
         shuffle=True,
         collate_fn=collate_fn,
     )
     val_loader = DataLoader(
-        full_val_dataset,
+        dataset=full_val_dataset,
         batch_size=config.BATCH_SIZE,
         shuffle=False,
         collate_fn=collate_fn,
@@ -118,7 +128,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
     # Initialize Model with UNIFIED configuration
     model = Mask2FormerForUniversalSegmentation.from_pretrained(
-        config.MODEL_CHECKPOINT,
+        pretrained_model_name_or_path=config.MODEL_CHECKPOINT,
         id2label=unified_id2label,
         label2id=unified_label2id,
         ignore_mismatched_sizes=True,

@@ -102,7 +102,7 @@ class CropWeedDataset(Dataset):
             # Find connected components to create distinct instances from the semantic mask
             num_labels, labels_im = cv2.connectedComponents(class_mask)
 
-            # labels_im: 0 is background (within this class mask), 1..N are components
+            # labels_im: 0 is background (within this class mask), 1...N are components
             for label_idx in range(1, num_labels):
                 if current_instance_id == 255:
                     current_instance_id += 1

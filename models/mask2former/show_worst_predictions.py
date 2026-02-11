@@ -144,7 +144,7 @@ def main(model_id, n_worst: int = N_WORST):
         return
 
     data_loader = DataLoader(
-        test_dataset,
+        dataset=test_dataset,
         batch_size=1,  # Important for per-image scoring
         shuffle=False,
         collate_fn=collate_fn,

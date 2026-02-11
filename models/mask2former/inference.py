@@ -122,13 +122,13 @@ def load_ground_truth(image_name: str,
 
 
 if __name__ == '__main__':
-    model, proc, dev = load_model(MODEL_ID)
+    model, processor, device = load_model(MODEL_ID)
     _, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
-    img_path = os.path.join(ds_config.TEST_IMG_DIR, IMG_NAME)
+    image_path = os.path.join(ds_config.TEST_IMG_DIR, IMG_NAME)
 
-    if os.path.exists(img_path):
+    if os.path.exists(image_path):
         # 1. Run Inference
-        img, res = run_inference(img_path, model, proc, dev)
+        img, res = run_inference(image_path=image_path, model=model, processor=processor, device=device)
 
         # 2. Load Ground Truth
         gt_res = load_ground_truth(
@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
         # 3. Visualize
         if gt_res:
-            fig, axes = plt.subplots(1, 2, figsize=(20, 10))
+            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 10))
 
             # Plot Prediction
             plot_segmentation(axes[0], img, res, model, instance_mode=False, score_threshold=0.5)
@@ -161,4 +161,4 @@ if __name__ == '__main__':
             plt.show()
 
     else:
-        print(f'Image not found at {img_path}')
+        print(f'Image not found at {image_path}')

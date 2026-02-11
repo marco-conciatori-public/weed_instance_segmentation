@@ -32,10 +32,10 @@ def test_model(model_id: str) -> None:
         processor=processor,
         label2id=ds_config.LABEL2ID,
     )
-    loader = DataLoader(test_ds, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+    loader = DataLoader(dataset=test_ds, batch_size=config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
-    metrics = test_with_metrics(model, processor, loader, device)
-    print_metrics_evaluation(metrics, model_name='Best Model')
+    result = test_with_metrics(model, processor, loader, device)
+    print_metrics_evaluation(metrics_evaluation=result, model_name='Best Model')
 
 
 if __name__ == '__main__':
