@@ -55,7 +55,7 @@ def collate_fn(batch) -> dict:
 
 def process_and_save(dataset, output_dir: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
-    print(f'Saving to {output_dir}')
+    print(f'\tSaving to "{output_dir}/"')
 
     total = len(dataset)
     for i in range(total):
@@ -67,4 +67,4 @@ def process_and_save(dataset, output_dir: str) -> None:
         base_name = os.path.splitext(file_name)[0]
         save_path = os.path.join(output_dir, f'{base_name}.pt')
         torch.save(item, save_path)
-    print(f'\tProcessed {total}/{total} images.')
+    print(f'\tProcessed {total}/{total} images')

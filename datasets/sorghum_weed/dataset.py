@@ -31,7 +31,7 @@ class SorghumWeedDataset(Dataset):
                 if (config.MAX_IMAGES is not None) and (valid_image_count >= config.MAX_IMAGES):
                     break
 
-        print(f'Loaded {len(self.valid_entries)} valid images from {annotation_file_path}')
+        print(f'\tLoaded {len(self.valid_entries)} valid images from "{annotation_file_path}"')
 
     def __len__(self):
         return len(self.valid_entries)
