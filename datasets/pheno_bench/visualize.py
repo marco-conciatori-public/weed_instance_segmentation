@@ -55,7 +55,7 @@ def visualize_dataset(image_folder: str, annotation_folder: str) -> None:
 
             # Create color overlay
             h, w = mask.shape
-            color_mask = np.zeros((h, w, 3), dtype=np.uint8)
+            color_mask = np.zeros(shape=(h, w, 3), dtype=np.uint8)
 
             unique_labels = np.unique(mask)
             legend_handles = []

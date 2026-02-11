@@ -48,7 +48,7 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
             else:
                 targets.append({
                     'masks': torch.zeros((0, *gt_map.shape), dtype=torch.bool),
-                    'labels': torch.tensor([], dtype=torch.long)
+                    'labels': torch.tensor(data=[], dtype=torch.long)
                 })
 
         # --- Prepare Predictions ---

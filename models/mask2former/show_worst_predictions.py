@@ -49,7 +49,7 @@ def get_batch_targets(original_maps, id_mappings) -> list:
         else:
             targets.append({
                 'masks': torch.zeros((0, *gt_map.shape), dtype=torch.bool),
-                'labels': torch.tensor([], dtype=torch.long)
+                'labels': torch.tensor(data=[], dtype=torch.long)
             })
     return targets
 
@@ -117,7 +117,7 @@ def convert_gt_map_to_result(gt_map, id_mapping) -> dict:
     }
 
 
-def main(model_id, n_worst: int = N_WORST):
+def main(model_id: str, n_worst: int = N_WORST) -> None:
     # 1. Load Model
     model, processor, device_name = load_model(model_id)
     device = torch.device(device_name)

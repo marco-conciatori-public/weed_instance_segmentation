@@ -60,7 +60,7 @@ def plot_segmentation(ax,
         color_palette = [cmap(i) for i in range(max(num_colors_needed, 1))]
     else:
         cmap = plt.get_cmap('nipy_spectral')
-        color_palette = [cmap(i) for i in np.linspace(0, 1, num_colors_needed)]
+        color_palette = [cmap(i) for i in np.linspace(start=0, stop=1, num=num_colors_needed)]
 
     for i, segment in enumerate(valid_segments):
         segment_id = segment['id']

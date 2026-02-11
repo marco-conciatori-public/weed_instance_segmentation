@@ -60,9 +60,9 @@ def load_ground_truth(image_name: str,
 
     # Determine scale factor based on original image size vs target size
     # target_size is (Width, Height) from the PIL Image
-    img_path = os.path.join(img_dir, image_name)
-    if os.path.exists(img_path):
-        with Image.open(img_path) as orig_img:
+    image_path = os.path.join(img_dir, image_name)
+    if os.path.exists(image_path):
+        with Image.open(image_path) as orig_img:
             orig_w, orig_h = orig_img.size
     else:
         # Fallback: assume the JSON coordinates match the target_size
@@ -74,7 +74,7 @@ def load_ground_truth(image_name: str,
     scale_y = target_h / orig_h
 
     # Create empty mask (H, W)
-    segmentation = np.zeros((target_h, target_w), dtype=np.int32)
+    segmentation = np.zeros(shape=(target_h, target_w), dtype=np.int32)
     segments_info = []
 
     regions = entry.get('regions', [])
