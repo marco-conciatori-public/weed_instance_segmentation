@@ -1,3 +1,4 @@
+import os
 from transformers import AutoImageProcessor
 
 import config
@@ -10,6 +11,13 @@ def main():
     for dataset_name in config.DATASET_LIST:
         print(f'=== Processing Dataset: {dataset_name} ===')
         WeedDataset, ds_config = get_dataset_and_config(dataset_name)
+
+        # check if dataset already preproccessed
+        try:
+            os.makedirs(ds_config.PROCESSED_DIR, exist_ok=False)
+        except OSError:
+            print(f'\tDataset "{dataset_name}" already preprocessed, skipping...\n')
+            continue
 
         # Train
         train_ds = WeedDataset(
