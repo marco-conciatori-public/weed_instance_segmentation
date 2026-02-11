@@ -56,7 +56,7 @@ def test_with_metrics(model, processor, data_loader, device) -> dict:
             outputs = model(pixel_values=pixel_values)
 
         predictions = processor.post_process_instance_segmentation(
-            outputs,
+            outputs=outputs,
             target_sizes=target_sizes,
             threshold=0.5,
             mask_threshold=0.5
@@ -98,7 +98,7 @@ def print_metrics_evaluation(metrics_evaluation: dict, model_name: str = 'Model'
         print('No metrics calculated.')
         return
 
-    def get_scalar(key):
+    def get_scalar(key) -> float:
         val = metrics_evaluation.get(key, torch.tensor(-1))
         return val.item() if val.numel() == 1 else -1
 
@@ -107,11 +107,11 @@ def print_metrics_evaluation(metrics_evaluation: dict, model_name: str = 'Model'
     print(f'  mAP (IoU=0.75): {100 * get_scalar("map_75"):.2f} %')
 
 
-def prepare_metrics_for_json(metrics) -> dict | None:
-    if not metrics:
+def prepare_metrics_for_json(results: dict) -> dict | None:
+    if not results:
         return None
     clean_metrics = {}
-    for k, v in metrics.items():
+    for k, v in results.items():
         if isinstance(v, torch.Tensor):
             if v.numel() == 1:
                 clean_metrics[k] = v.item()

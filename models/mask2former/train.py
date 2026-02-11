@@ -14,10 +14,10 @@ warnings.filterwarnings('ignore', category=UserWarning, message='.*The following
 SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
 
 
-def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:
+def evaluate(model, data_loader, device, description: str = 'Evaluating') -> float:
     model.eval()
     total_loss = 0
-    print(f'Starting: {desc}')
+    print(f'\tStarting {description}')
     with torch.no_grad():
         for i, batch in enumerate(data_loader):
             pixel_values = batch['pixel_values'].to(device)
@@ -31,12 +31,12 @@ def evaluate(model, data_loader, device, desc: str = 'Evaluating') -> float:
             )
             total_loss += outputs.loss.item()
             if (i + 1) % 10 == 0:
-                print(f'  {desc} Step {i + 1}/{len(data_loader)} - Loss: {outputs.loss.item():.4f}')
+                print(f'\t\t{description} Step {i + 1}/{len(data_loader)} - Loss: {outputs.loss.item():.4f}')
 
     return total_loss / len(data_loader)
 
 
-def get_unified_labels(dataset_list: list):
+def get_unified_labels(dataset_list: list) -> tuple[dict, dict]:
     """
     Merges ID2LABEL maps from multiple datasets into a single unified mapping.
     Ensures no ID conflicts if classes differ.
@@ -82,7 +82,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         # Check if we need to pre-process (Train)
         # Note: If you change label mappings often, you might need to force re-processing here.
         if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
-            print(f'Pre-processing {dataset_name} Train data...')
+            print(f'\tPre-processing {dataset_name} Train data...')
             # Pass the UNIFIED label map so all datasets speak the same language
             raw_train = WeedDataset(
                 image_folder_path=ds_config.TRAIN_IMG_DIR,
@@ -94,7 +94,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
         # Check if we need to pre-process (Validate)
         if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
-            print(f'Pre-processing {dataset_name} Validation data...')
+            print(f'\tPre-processing {dataset_name} Validation data...')
             raw_val = WeedDataset(
                 image_folder_path=ds_config.VAL_IMG_DIR,
                 annotation_folder=ds_config.VAL_ANNOTATIONS,
@@ -110,8 +110,8 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     full_train_dataset = ConcatDataset(train_datasets)
     full_val_dataset = ConcatDataset(val_datasets)
 
-    print(f'\nCombined Training Samples: {len(full_train_dataset)}')
-    print(f'Combined Validation Samples: {len(full_val_dataset)}')
+    print(f'\n\tCombined Training Samples: {len(full_train_dataset)}')
+    print(f'\tCombined Validation Samples: {len(full_val_dataset)}')
 
     train_loader = DataLoader(
         dataset=full_train_dataset,
@@ -159,20 +159,20 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
             current_loss = loss.item() * config.GRADIENT_ACCUMULATION
             total_loss += current_loss
-            print(f'  Step {step + 1}/{len(train_loader)} - Loss: {current_loss:.4f}')
+            # print(f'\t\tStep {step + 1}/{len(train_loader)} - Loss: {current_loss:.4f}')
 
         avg_train_loss = total_loss / len(train_loader)
-        print(f'Epoch {epoch + 1} Avg Loss: {avg_train_loss:.4f}')
+        print(f'\tEpoch {epoch + 1} Avg Loss: {avg_train_loss:.4f}')
 
-        avg_val_loss = evaluate(model, val_loader, device)
-        print(f'Epoch {epoch + 1} Val Loss: {avg_val_loss:.4f}')
+        avg_val_loss = evaluate(model=model, data_loader=val_loader, device=device, description='Validation')
+        print(f'\tEpoch {epoch + 1} Val Loss: {avg_val_loss:.4f}')
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             save_path = os.path.join(output_dir, 'best_model')
             model.save_pretrained(save_path)
             processor.save_pretrained(save_path)
-            print(f'Saved new best model (Loss: {best_val_loss:.4f})')
+            print(f'\tSaved new best model (Loss: {best_val_loss:.4f})')
 
     final_path = os.path.join(output_dir, 'final_model')
     model.save_pretrained(final_path)
