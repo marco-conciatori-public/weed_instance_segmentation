@@ -9,7 +9,7 @@ def main():
     for dataset_name in config.DATASET_LIST:
         print(f'=== Processing Dataset: {dataset_name} ===')
         processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
-        WeedDataset, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
+        WeedDataset, ds_config = get_dataset_and_config(dataset_name)
 
         # Train
         train_ds = WeedDataset(
