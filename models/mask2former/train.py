@@ -61,6 +61,13 @@ def get_unified_labels(dataset_list: list) -> tuple[dict, dict]:
     return unified_id2label, unified_label2id
 
 
+def format_duration(start_dt: datetime, end_dt: datetime) -> str:
+    """Calculates duration between two datetime objects."""
+    duration = end_dt - start_dt
+    # Convert to string and remove microseconds
+    return str(duration).split('.')[0]
+
+
 def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Training on: {device}')
@@ -169,8 +176,10 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.LEARNING_RATE)
 
     best_val_loss = float('inf')
+    metadata['training_history'] = []
     model.train()
     print('Starting Training...')
+    train_start_time = datetime.now()
 
     for epoch in range(config.EPOCHS):
         total_loss = 0
@@ -199,12 +208,23 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         avg_val_loss = evaluate(model=model, data_loader=val_loader, device=device, description='Validation')
         print(f'\tEpoch {epoch + 1} Val Loss: {avg_val_loss:.4f}')
 
+        # Log epoch stats
+        metadata['training_history'].append({
+            'epoch': epoch + 1,
+            'train_loss': avg_train_loss,
+            'val_loss': avg_val_loss
+        })
+
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             save_path = os.path.join(output_dir, 'best_model')
             model.save_pretrained(save_path)
             processor.save_pretrained(save_path)
             print(f'\tSaved new best model (Loss: {best_val_loss:.4f})')
+
+    train_end_time = datetime.now()
+    metadata['training_duration'] = format_duration(train_start_time, train_end_time)
+    print(f'\tTraining finished in {metadata["training_duration"]}')
 
     final_path = os.path.join(output_dir, 'final_model')
     model.save_pretrained(final_path)
@@ -213,6 +233,9 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     # --- Test Phase ---
     print('\n--- Starting Test Phase (Best Model) ---')
     best_model_path = os.path.join(output_dir, 'best_model')
+
+    test_start_time = datetime.now()
+
     if os.path.exists(best_model_path):
         print(f'\tLoading best model from {best_model_path}')
         best_model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
@@ -233,6 +256,10 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         print('\tTest Results added to metadata.')
     else:
         print('\tBest model not found, skipping test phase.')
+
+    test_end_time = datetime.now()
+    metadata['test_duration'] = format_duration(test_start_time, test_end_time)
+    print(f'Testing finished in {metadata["test_duration"]}')
 
     return metadata
 
