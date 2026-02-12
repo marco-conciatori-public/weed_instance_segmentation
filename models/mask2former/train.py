@@ -70,6 +70,7 @@ def format_duration(start_dt: datetime, end_dt: datetime) -> str:
 
 def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     try:
+        start_time = datetime.now()
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f'Training on: {device}')
 
@@ -137,6 +138,12 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         print(f'\tCombined Validation Samples: {len(full_val_dataset)}')
         print(f'\tCombined Test Samples: {len(full_test_dataset)}')
 
+        end_time = datetime.now()
+        elapsed_time = format_duration(start_time, end_time)
+        print(f'\tData preprocessing completed in {elapsed_time}')
+        metadata['preprocessing_time'] = elapsed_time
+        start_time = end_time
+
         train_loader = DataLoader(
             dataset=full_train_dataset,
             batch_size=config.BATCH_SIZE,
@@ -170,7 +177,12 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         metadata['training_history'] = []
         model.train()
         print('Starting Training...')
-        train_start_time = datetime.now()
+
+        end_time = datetime.now()
+        elapsed_time = format_duration(start_time, end_time)
+        print(f'\tData and model loading completed in {elapsed_time}')
+        metadata['data_and_model_loading_time'] = elapsed_time
+        start_time = end_time
 
         for epoch in range(config.EPOCHS):
             total_loss = 0
@@ -213,9 +225,10 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
                 processor.save_pretrained(save_path)
                 print(f'\tSaved new best model (Loss: {best_val_loss:.4f})')
 
-        train_end_time = datetime.now()
-        metadata['training_duration'] = format_duration(train_start_time, train_end_time)
-        print(f'\tTraining finished in {metadata["training_duration"]}')
+        end_time = datetime.now()
+        elapsed_time = format_duration(start_time, end_time)
+        print(f'\tTraining completed in {elapsed_time}')
+        metadata['training_time'] = elapsed_time
 
         final_path = os.path.join(output_dir, 'final_model')
         model.save_pretrained(final_path)
@@ -225,7 +238,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         print('\n--- Starting Test Phase (Best Model) ---')
         best_model_path = os.path.join(output_dir, 'best_model')
 
-        test_start_time = datetime.now()
+        start_time = datetime.now()
 
         if os.path.exists(best_model_path):
             print(f'\tLoading best model from {best_model_path}')
@@ -247,8 +260,11 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
         else:
             print('\tBest model not found, skipping test phase.')
 
-        test_end_time = datetime.now()
-        metadata['test_duration'] = format_duration(test_start_time, test_end_time)
+        end_time = datetime.now()
+        elapsed_time = format_duration(start_time, end_time)
+        print(f'\tTest completed in {elapsed_time}')
+        metadata['test_time'] = elapsed_time
+
         return metadata
 
     except Exception as e:
@@ -257,14 +273,14 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
 
 def main():
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f'{timestamp}')
+    global_start_time = datetime.now()
+    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f'{global_start_time}')
     os.makedirs(run_output_dir, exist_ok=True)
 
     metadata = {
-        'run_id': timestamp,
+        'start_time': global_start_time.strftime('%Y-%m-%d_%H-%M-%S'),
         'dataset_list': config.DATASET_LIST,
-        'model_checkpoint': config.MODEL_CHECKPOINT,
+        'base_model': config.MODEL_CHECKPOINT,
         'batch_size': config.BATCH_SIZE,
         'learning_rate': config.LEARNING_RATE,
         'epochs': config.EPOCHS,
@@ -280,12 +296,15 @@ def main():
         print(f'\nError in saving metadata to "{metadata_path}":\n\t {e}')
 
     # Metadata is updated in place during train()
-    updated_medatada = train(output_dir=run_output_dir, metadata=metadata, dataset_list=config.DATASET_LIST)
+    updated_metadata = train(output_dir=run_output_dir, metadata=metadata, dataset_list=config.DATASET_LIST)
+    global_end_time = datetime.now()
+    updated_metadata['end_time'] = global_end_time.strftime('%Y-%m-%d_%H-%M-%S')
+    updated_metadata['total_time'] = format_duration(global_start_time, global_end_time)
 
     # Update metadata
     try:
         with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=4)
+            json.dump(updated_metadata, f, indent=4)
     except Exception as e:
         print(f'\nError in updating metadata to "{metadata_path}":\n\t {e}')
 
