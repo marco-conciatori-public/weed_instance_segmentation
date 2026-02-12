@@ -274,7 +274,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
 def main():
     global_start_time = datetime.now()
-    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f'{global_start_time}')
+    run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f'{global_start_time.strftime('%Y-%m-%d_%H-%M-%S')}')
     os.makedirs(run_output_dir, exist_ok=True)
 
     metadata = {
