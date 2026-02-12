@@ -65,6 +65,16 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Training on: {device}')
 
+    # 0. Add Config Parameters to Metadata
+    metadata['parameters'] = {
+        'model_checkpoint': config.MODEL_CHECKPOINT,
+        'batch_size': config.BATCH_SIZE,
+        'learning_rate': config.LEARNING_RATE,
+        'epochs': config.EPOCHS,
+        'gradient_accumulation': config.GRADIENT_ACCUMULATION,
+        'max_input_dim': config.MAX_INPUT_DIM,
+    }
+
     # 1. Prepare Unified Labels
     unified_id2label, unified_label2id = get_unified_labels(dataset_list)
     processor = AutoImageProcessor.from_pretrained(config.MODEL_CHECKPOINT, use_fast=False)
