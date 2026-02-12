@@ -276,6 +276,7 @@ def main():
     global_start_time = datetime.now()
     run_output_dir = os.path.join(SPECIFIC_OUTPUT_DIR, f'{global_start_time.strftime('%Y-%m-%d_%H-%M-%S')}')
     os.makedirs(run_output_dir, exist_ok=True)
+    print(f'Training started at {global_start_time.strftime("%Y-%m-%d %H:%M:%S")}')
 
     metadata = {
         'start_time': global_start_time.strftime('%Y-%m-%d_%H-%M-%S'),
@@ -300,6 +301,7 @@ def main():
     global_end_time = datetime.now()
     updated_metadata['end_time'] = global_end_time.strftime('%Y-%m-%d_%H-%M-%S')
     updated_metadata['total_time'] = format_duration(global_start_time, global_end_time)
+    print(f'Training finished at {updated_metadata['end_time']}, total duration: {updated_metadata["total_time"]}')
 
     # Update metadata
     try:
