@@ -29,7 +29,7 @@ class CropWeedDataset(Dataset):
         self.valid_files = []
         valid_count = 0
 
-        print(f"Scanning {len(yaml_files)} annotation files in {self.annotation_path}...")
+        print(f'Scanning {len(yaml_files)} annotation files in "{self.annotation_path}"...')
 
         for yaml_path in yaml_files:
             try:
@@ -54,7 +54,7 @@ class CropWeedDataset(Dataset):
                     if (config.MAX_IMAGES is not None) and (valid_count >= config.MAX_IMAGES):
                         break
             except Exception as e:
-                print(f"Warning: Error reading {yaml_path}: {e}")
+                print(f'Warning: Error reading "{yaml_path}":\n\t {e}')
 
         print(f'\tLoaded {len(self.valid_files)} valid image/yaml pairs from "{self.image_folder}"')
 

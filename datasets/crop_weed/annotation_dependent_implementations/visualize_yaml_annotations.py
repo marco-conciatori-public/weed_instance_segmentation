@@ -45,7 +45,7 @@ def visualize_dataset(image_folder: str, annotation_folder: str) -> None:
             img_path = os.path.join(image_folder, img_filename)
 
             if not os.path.exists(img_path):
-                print(f"Image not found for annotation {os.path.basename(yaml_path)}: {img_filename}")
+                print(f'Image "{img_filename}" not found for annotation "{os.path.basename(yaml_path)}"')
                 continue
 
             print(f'Displaying: {img_filename}')

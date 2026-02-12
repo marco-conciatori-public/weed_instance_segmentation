@@ -15,9 +15,9 @@ class PreprocessedDataset(Dataset):
         self.files.sort()
 
         if len(self.files) == 0:
-            print(f"WARNING: No .pt files found in {processed_dir}. Has preprocessing been run?")
+            print(f'WARNING: No .pt files found in "{processed_dir}"')
         else:
-            print(f"Loaded {len(self.files)} pre-processed samples from {processed_dir}")
+            print(f'\fLoaded {len(self.files)} pre-processed samples from "{processed_dir}"')
 
     def __len__(self):
         return len(self.files)
@@ -55,16 +55,16 @@ def collate_fn(batch) -> dict:
 
 def process_and_save(dataset, output_dir: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
-    print(f'\tSaving to "{output_dir}"')
+    print(f'\t\tSaving to "{output_dir}"')
 
     total = len(dataset)
     for i in range(total):
         if (i + 1) % 10 == 0:
-            print(f'\tProcessed {i + 1}/{total} images...', end='\r')
+            print(f'\t\tProcessed {i + 1}/{total} images...', end='\r')
 
         item = dataset[i]
         file_name = item['file_name']
         base_name = os.path.splitext(file_name)[0]
         save_path = os.path.join(output_dir, f'{base_name}.pt')
         torch.save(item, save_path)
-    print(f'\tProcessed {total}/{total} images')
+    print(f'\t\tProcessed {total}/{total} images')
