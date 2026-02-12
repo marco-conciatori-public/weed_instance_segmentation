@@ -15,7 +15,7 @@ DATASET_LIST = [
     'pheno_bench',
     # 'crop_weed',
 ]
-FORCE_PREPROCESSING = True
+FORCE_PREPROCESSING = False
 
 # Output Directories
 OUTPUT_DIR = 'C:/Users/Marco/GIT/weed_instance_segmentation/output/'
