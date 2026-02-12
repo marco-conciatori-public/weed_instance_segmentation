@@ -9,6 +9,7 @@ from transformers import Mask2FormerForUniversalSegmentation, AutoImageProcessor
 import config
 from datasets.factory import get_dataset_and_config
 from datasets.dataset_utils import PreprocessedDataset, collate_fn, process_and_save
+from models.metrics import test_with_metrics, prepare_metrics_for_json, print_metrics_evaluation
 
 warnings.filterwarnings('ignore', category=UserWarning, message='.*The following named arguments are not valid.*')
 SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
@@ -70,6 +71,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
     train_datasets = []
     val_datasets = []
+    test_datasets = []
 
     # 2. Iterate and Load/Process each dataset
     for dataset_name in dataset_list:
@@ -78,40 +80,54 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
 
         train_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Train')
         val_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Validate')
+        test_proc_path = os.path.join(ds_config.PROCESSED_DIR, 'Test')
 
         # Check if we need to pre-process (Train)
-        # Note: If you change label mappings often, you might need to force re-processing here.
-        if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0:
+        if not os.path.exists(train_proc_path) or len(os.listdir(train_proc_path)) == 0 or config.FORCE_PREPROCESSING:
             print(f'\tPre-processing {dataset_name} Train data...')
             # Pass the UNIFIED label map so all datasets speak the same language
             raw_train = WeedDataset(
                 image_folder_path=ds_config.TRAIN_IMG_DIR,
-                annotation_folder=ds_config.TRAIN_ANNOTATIONS,
+                annotation_path=ds_config.TRAIN_ANNOTATIONS,
                 processor=processor,
                 label2id=unified_label2id,
             )
             process_and_save(raw_train, output_dir=train_proc_path)
 
         # Check if we need to pre-process (Validate)
-        if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0:
+        if not os.path.exists(val_proc_path) or len(os.listdir(val_proc_path)) == 0 or config.FORCE_PREPROCESSING:
             print(f'\tPre-processing {dataset_name} Validation data...')
             raw_val = WeedDataset(
                 image_folder_path=ds_config.VAL_IMG_DIR,
-                annotation_folder=ds_config.VAL_ANNOTATIONS,
+                annotation_path=ds_config.VAL_ANNOTATIONS,
                 processor=processor,
                 label2id=unified_label2id,
             )
             process_and_save(raw_val, output_dir=val_proc_path)
 
+        # Check if we need to pre-process (Test)
+        if not os.path.exists(test_proc_path) or len(os.listdir(test_proc_path)) == 0 or config.FORCE_PREPROCESSING:
+            print(f'\tPre-processing {dataset_name} Test data...')
+            raw_test = WeedDataset(
+                image_folder_path=ds_config.TEST_IMG_DIR,
+                annotation_path=ds_config.TEST_ANNOTATIONS,
+                processor=processor,
+                label2id=unified_label2id,
+            )
+            process_and_save(raw_test, output_dir=test_proc_path)
+
         train_datasets.append(PreprocessedDataset(train_proc_path))
         val_datasets.append(PreprocessedDataset(val_proc_path))
+        test_datasets.append(PreprocessedDataset(test_proc_path))
 
     # 3. Concatenate Datasets
     full_train_dataset = ConcatDataset(train_datasets)
     full_val_dataset = ConcatDataset(val_datasets)
+    full_test_dataset = ConcatDataset(test_datasets)
 
     print(f'\n\tCombined Training Samples: {len(full_train_dataset)}')
     print(f'\tCombined Validation Samples: {len(full_val_dataset)}')
+    print(f'\tCombined Test Samples: {len(full_test_dataset)}')
 
     train_loader = DataLoader(
         dataset=full_train_dataset,
@@ -121,6 +137,12 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     )
     val_loader = DataLoader(
         dataset=full_val_dataset,
+        batch_size=config.BATCH_SIZE,
+        shuffle=False,
+        collate_fn=collate_fn,
+    )
+    test_loader = DataLoader(
+        dataset=full_test_dataset,
         batch_size=config.BATCH_SIZE,
         shuffle=False,
         collate_fn=collate_fn,
@@ -177,6 +199,31 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
     final_path = os.path.join(output_dir, 'final_model')
     model.save_pretrained(final_path)
     processor.save_pretrained(final_path)
+
+    # --- Test Phase ---
+    print('\n--- Starting Test Phase (Best Model) ---')
+    best_model_path = os.path.join(output_dir, 'best_model')
+    if os.path.exists(best_model_path):
+        print(f'\tLoading best model from {best_model_path}')
+        best_model = Mask2FormerForUniversalSegmentation.from_pretrained(best_model_path).to(device)
+        best_processor = AutoImageProcessor.from_pretrained(best_model_path, use_fast=False)
+
+        test_results = test_with_metrics(
+            model=best_model,
+            processor=best_processor,
+            data_loader=test_loader,
+            device=device,
+        )
+        print_metrics_evaluation(metrics_evaluation=test_results, model_name='Best Model')
+
+        # Add to metadata
+        clean_metrics = prepare_metrics_for_json(test_results)
+        metadata['test_metrics'] = clean_metrics
+
+        print('\tTest Results added to metadata.')
+    else:
+        print('\tBest model not found, skipping test phase.')
+
     return metadata
 
 
@@ -189,6 +236,7 @@ def main():
         'run_id': timestamp,
         'dataset_list': config.DATASET_LIST,
     }
+    # Metadata is updated in place during train()
     train(run_output_dir, metadata, dataset_list=config.DATASET_LIST)
 
     # Save metadata
