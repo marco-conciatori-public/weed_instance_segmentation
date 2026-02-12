@@ -16,20 +16,20 @@ class CropWeedDataset(Dataset):
     - Images folder containing RGB images.
     - Annotations folder containing .yaml files with polygon definitions.
     """
-    def __init__(self, image_folder_path, annotation_file_path, processor, label2id: dict):
+    def __init__(self, image_folder_path, annotation_path, processor, label2id: dict):
         self.image_folder = image_folder_path
-        self.annotation_folder = annotation_file_path
+        self.annotation_path = annotation_path
         self.processor = processor
         self.label2id = label2id
 
         # List all YAML files in the annotation folder
-        yaml_files = glob.glob(os.path.join(self.annotation_folder, '*.yaml'))
+        yaml_files = glob.glob(os.path.join(self.annotation_path, '*.yaml'))
         yaml_files.sort()
 
         self.valid_files = []
         valid_count = 0
 
-        print(f"Scanning {len(yaml_files)} annotation files in {self.annotation_folder}...")
+        print(f"Scanning {len(yaml_files)} annotation files in {self.annotation_path}...")
 
         for yaml_path in yaml_files:
             try:

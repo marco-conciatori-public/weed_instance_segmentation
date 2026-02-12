@@ -12,12 +12,12 @@ class SorghumWeedDataset(Dataset):
     """
     Standard PyTorch Dataset for loading raw images and JSON annotations.
     """
-    def __init__(self, image_folder_path, annotation_file_path, processor, label2id: dict):
+    def __init__(self, image_folder_path, annotation_path, processor, label2id: dict):
         self.image_folder = image_folder_path
         self.processor = processor
         self.label2id = label2id
 
-        with open(annotation_file_path, 'r') as f:
+        with open(annotation_path, 'r') as f:
             self.data = list(json.load(f).values())
 
         # Filter valid entries
@@ -31,7 +31,7 @@ class SorghumWeedDataset(Dataset):
                 if (config.MAX_IMAGES is not None) and (valid_image_count >= config.MAX_IMAGES):
                     break
 
-        print(f'\tLoaded {len(self.valid_entries)} valid images from "{annotation_file_path}"')
+        print(f'\tLoaded {len(self.valid_entries)} valid images from "{annotation_path}"')
 
     def __len__(self):
         return len(self.valid_entries)

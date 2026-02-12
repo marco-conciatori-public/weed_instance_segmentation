@@ -15,9 +15,9 @@ class PhenoBenchDataset(Dataset):
     - Images folder containing RGB images (png/jpg).
     - Annotations folder containing 16-bit PNG semantic masks.
     """
-    def __init__(self, image_folder_path, annotation_file_path, processor, label2id: dict):
+    def __init__(self, image_folder_path, annotation_path, processor, label2id: dict):
         self.image_folder = image_folder_path
-        self.annotation_folder = annotation_file_path  # In PhenoBench, this is a folder, not a file
+        self.annotation_path = annotation_path  # In PhenoBench, this is a folder, not a file
         self.processor = processor
         self.label2id = label2id
 
@@ -32,7 +32,7 @@ class PhenoBenchDataset(Dataset):
             file_name = os.path.basename(img_path)
             # Mask assumption: same basename, definitely .png
             mask_name = os.path.splitext(file_name)[0] + '.png'
-            mask_path = os.path.join(self.annotation_folder, mask_name)
+            mask_path = os.path.join(self.annotation_path, mask_name)
 
             if os.path.exists(mask_path):
                 self.valid_files.append((img_path, mask_path))

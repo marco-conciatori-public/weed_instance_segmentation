@@ -15,9 +15,9 @@ class CropWeedDataset(Dataset):
     - Images folder containing RGB images (png/jpg).
     - Annotations folder containing RGB PNG semantic masks (Red=Weed, Green=Crop).
     """
-    def __init__(self, image_folder_path, annotation_file_path, processor, label2id: dict):
+    def __init__(self, image_folder_path, annotation_path, processor, label2id: dict):
         self.image_folder = image_folder_path
-        self.annotation_folder = annotation_file_path
+        self.annotation_path = annotation_path
         self.processor = processor
         self.label2id = label2id
 
@@ -33,7 +33,7 @@ class CropWeedDataset(Dataset):
             base_name = os.path.splitext(file_name)[0]
             image_number = base_name.split('_')[0]
             mask_name = image_number + '_annotation.png'
-            mask_path = os.path.join(self.annotation_folder, mask_name)
+            mask_path = os.path.join(self.annotation_path, mask_name)
 
             if os.path.exists(mask_path):
                 self.valid_files.append((img_path, mask_path))
