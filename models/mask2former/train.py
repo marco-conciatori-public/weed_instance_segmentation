@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore', category=UserWarning, message='.*The following
 SPECIFIC_OUTPUT_DIR = config.MODELS_OUTPUT_DIR + 'mask2former_fine_tuned/'
 
 
-def evaluate(model, data_loader, device, description: str = 'Evaluating') -> float:
+def evaluate(model, data_loader, device, description: str = None) -> float:
     model.eval()
     total_loss = 0
     print(f'\tStarting {description}')
@@ -31,7 +31,7 @@ def evaluate(model, data_loader, device, description: str = 'Evaluating') -> flo
                 class_labels=class_labels
             )
             total_loss += outputs.loss.item()
-            if (i + 1) % 10 == 0:
+            if (description is not None) and ((i + 1) % 10 == 0):
                 print(f'\t\t{description} Step {i + 1}/{len(data_loader)} - Loss: {outputs.loss.item():.4f}')
 
     return total_loss / len(data_loader)
@@ -208,7 +208,7 @@ def train(output_dir, metadata: dict, dataset_list: list) -> dict:
             avg_train_loss = total_loss / len(train_loader)
             print(f'\tEpoch {epoch + 1} Avg Loss: {avg_train_loss:.4f}')
 
-            avg_val_loss = evaluate(model=model, data_loader=val_loader, device=device, description='Validation')
+            avg_val_loss = evaluate(model=model, data_loader=val_loader, device=device, description=None)
             print(f'\tEpoch {epoch + 1} Val Loss: {avg_val_loss:.4f}')
 
             # Log epoch stats
