@@ -11,10 +11,11 @@ from datasets.factory import get_dataset_and_config
 from models.model_utils import load_model, plot_segmentation
 
 MODEL_ID = 'mask2former_fine_tuned/2026-02-09_23-50-52/best_model/'
-IMG_NAME = 'TestSorghumWeed (7).JPG'
+IMAGE_PATH = 'data/reference_images/pic1.jpeg'
+GROUND_TRUTH_ANNOTATION_PATH = None
 
 
-def run_inference(image_path, model, processor, device):
+def run_inference(image_path, model, processor, device) -> tuple[Image.Image, dict]:
     image = Image.open(image_path).convert('RGB')
     w, h = image.size
     if max(w, h) > config.MAX_INPUT_DIM:
@@ -123,24 +124,20 @@ def load_ground_truth(image_name: str,
 
 if __name__ == '__main__':
     model, processor, device = load_model(MODEL_ID)
-    _, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
-    image_path = os.path.join(ds_config.TEST_IMG_DIR, IMG_NAME)
 
-    if os.path.exists(image_path):
-        # 1. Run Inference
-        img, res = run_inference(image_path=image_path, model=model, processor=processor, device=device)
+    if os.path.exists(IMAGE_PATH):
+        img, res = run_inference(image_path=IMAGE_PATH, model=model, processor=processor, device=device)
 
-        # 2. Load Ground Truth
-        gt_res = load_ground_truth(
-            image_name=IMG_NAME,
-            target_size=img.size,
-            annotation_file=ds_config.TEST_ANNOTATIONS,
-            img_dir=ds_config.TEST_IMG_DIR,
-            label2id=ds_config.LABEL2ID
-        )
+        if GROUND_TRUTH_ANNOTATION_PATH:
+            _, ds_config = get_dataset_and_config(config.DATASET_LIST[0])
+            gt_res = load_ground_truth(
+                image_name=IMAGE_PATH,
+                target_size=img.size,
+                annotation_file=ds_config.TEST_ANNOTATIONS,
+                img_dir=ds_config.TEST_IMG_DIR,
+                label2id=ds_config.LABEL2ID
+            )
 
-        # 3. Visualize
-        if gt_res:
             fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 10))
 
             # Plot Prediction
@@ -153,6 +150,7 @@ if __name__ == '__main__':
 
             plt.tight_layout()
             plt.show()
+
         else:
             # Fallback to single plot if GT fails
             fig, ax = plt.subplots(figsize=(12, 12))
@@ -161,4 +159,4 @@ if __name__ == '__main__':
             plt.show()
 
     else:
-        print(f'Image not found at {image_path}')
+        print(f'Image not found at {IMAGE_PATH}')
