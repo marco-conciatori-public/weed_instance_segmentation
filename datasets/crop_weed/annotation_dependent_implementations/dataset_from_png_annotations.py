@@ -66,9 +66,9 @@ class CropWeedDataset(Dataset):
             new_width = int(width * scale_factor)
             new_height = int(height * scale_factor)
 
-            image = image.resize((new_width, new_height), resample=Image.BILINEAR)
+            image = image.resize(size=(new_width, new_height), resample=Image.BILINEAR)
             # Resize mask using Nearest Neighbor to preserve color codes
-            mask_rgb = cv2.resize(mask_rgb, (new_width, new_height), interpolation=cv2.INTER_NEAREST)
+            mask_rgb = cv2.resize(src=mask_rgb, dsize=(new_width, new_height), interpolation=cv2.INTER_NEAREST)
 
             width, height = new_width, new_height
 
@@ -76,7 +76,7 @@ class CropWeedDataset(Dataset):
 
         # --- Create Instance Map ---
         # Initialize with 255 (ignore/background)
-        instance_map = np.full((height, width), 255, dtype=np.int32)
+        instance_map = np.full(shape=(height, width), fill_value=255, dtype=np.int32)
         instance_id_to_semantic_id = {}
         current_instance_id = 1
 

@@ -81,14 +81,14 @@ class CropWeedDataset(Dataset):
             new_width = int(width * scale_factor)
             new_height = int(height * scale_factor)
 
-            image = image.resize((new_width, new_height), resample=Image.BILINEAR)
+            image = image.resize(size=(new_width, new_height), resample=Image.BILINEAR)
             width, height = new_width, new_height
 
         target_size = (height, width)
 
         # --- Create Instance Map ---
         # Initialize with 255 (ignore/background)
-        instance_map = np.full((height, width), 255, dtype=np.int32)
+        instance_map = np.full(shape=(height, width), fill_value=255, dtype=np.int32)
         instance_id_to_semantic_id = {}
         current_instance_id = 1
 

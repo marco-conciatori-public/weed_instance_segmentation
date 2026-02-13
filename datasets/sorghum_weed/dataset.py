@@ -49,7 +49,7 @@ class SorghumWeedDataset(Dataset):
             scale_factor = config.MAX_INPUT_DIM / max(width, height)
             new_width = int(width * scale_factor)
             new_height = int(height * scale_factor)
-            image = image.resize((new_width, new_height), resample=Image.BILINEAR)
+            image = image.resize(size=(new_width, new_height), resample=Image.BILINEAR)
             width, height = new_width, new_height
 
         target_size = (height, width)

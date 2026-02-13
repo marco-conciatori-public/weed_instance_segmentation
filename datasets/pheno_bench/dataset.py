@@ -65,10 +65,14 @@ class PhenoBenchDataset(Dataset):
             new_height = int(height * scale_factor)
 
             # Resize image (Bilinear)
-            image = image.resize((new_width, new_height), resample=Image.BILINEAR)
+            image = image.resize(size=(new_width, new_height), resample=Image.BILINEAR)
 
             # Resize mask (Nearest Neighbor to preserve labels)
-            semantic_mask = cv2.resize(semantic_mask, (new_width, new_height), interpolation=cv2.INTER_NEAREST)
+            semantic_mask = cv2.resize(
+                src=semantic_mask,
+                dsize=(new_width, new_height),
+                interpolation=cv2.INTER_NEAREST,
+            )
 
             width, height = new_width, new_height
 

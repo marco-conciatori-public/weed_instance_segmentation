@@ -20,7 +20,7 @@ def run_inference(image_path, model, processor, device) -> tuple[Image.Image, di
     w, h = image.size
     if max(w, h) > config.MAX_INPUT_DIM:
         scale = config.MAX_INPUT_DIM / max(w, h)
-        image = image.resize((int(w * scale), int(h * scale)), Image.BILINEAR)
+        image = image.resize(size=(int(w * scale), int(h * scale)), resample=Image.BILINEAR)
 
     inputs = processor(images=image, return_tensors='pt').to(device)
     with torch.no_grad():
